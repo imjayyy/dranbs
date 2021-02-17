@@ -1,0 +1,107 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+{% block extrastyle %}
+{#    <link rel="stylesheet" href="{% static 'admin/jqueryui/jquery-ui.min.css' %}">#}
+    <link rel="stylesheet" href="{% static 'admin/datatable/dataTables.jqueryui.min.css' %}">
+    <link rel="stylesheet" href="{% static 'admin/datatable/responsive.jqueryui.min.css' %}">
+{% endblock %}
+
+{% block pretitle %}
+
+{% endblock %}
+
+{% block content %}
+    <div class="el-row" style="margin-top: 30px">
+        <div class="el-col el-col-8">
+            <canvas id="userPieChart" width="100px" height="100px">
+            </canvas>
+        </div>
+        <div class="el-col el-col-8">
+            <div class="el-card">
+                <div class="el-card__body" style="text-align: center">
+                    <span style="font-size:30px;">Average Age</span><br>
+                    <span style="font-weight: 600; font-size: 48px">{{ avg }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="el-row" style="margin-top: 30px">
+        <div class="el-col el-col-24">
+            <table id="stats-table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Count</th>
+                </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extrascript %}
+    <script src="{% static 'admin/chartjs/Chart.bundle.min.js' %}"></script>
+    <script src="{% static 'admin/datatable/datatables.min.js' %}"></script>
+    <script src="{% static 'admin/datatable/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'admin/datatable/dataTables.jqueryui.min.js' %}"></script>
+    <script src="{% static 'admin/datatable/dataTables.responsive.min.js' %}"></script>
+    <script src="{% static 'admin/datatable/responsive.jqueryui.min.js' %}"></script>
+    <script>
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        $(document).ready(function () {
+            var csrftoken = getCookie('csrftoken');
+            $.ajaxSetup({
+                beforeSend: function(xhr, settings) {
+                    if (!this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            });
+
+            $.ajax({
+                type: 'GET',
+                url: '/backend/backend/stat/stats_summary',
+                success: function (data) {
+                    var ctx = document.getElementById('userPieChart');
+                    var userPieChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                    ctx.style.height = '200px';
+                    ctx.style.width = '200px';
+                }
+            });
+
+            $('#stats-table').DataTable({
+                serverSide: true,
+                ajax: {
+                    url: '/backend/backend/stat/stats_data',
+                    type: 'POST'
+                },
+                columns: [
+                    {data: 'name'},
+                    {data: 'count', searchable: false},
+                ]
+            });
+        })
+    </script>
+{% endblock %}
