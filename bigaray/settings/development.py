@@ -2,6 +2,10 @@ from .base import *
 
 DEBUG = True
 
+ALLOWED_HOSTS = [
+    '104.248.182.107'
+]
+
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
