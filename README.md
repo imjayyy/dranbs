@@ -55,3 +55,22 @@ ExecStart=/home/deploy/bigaray/venv/bin/scrapyd
 [Install]
 WantedBy=multi-user.target
 ```
+Gunicorn service
+```shell
+sudo nano /etc/systemd/system/gunicorn.service
+```
+
+```editorconfig
+[Unit]
+Description=gunicorn daemon
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/home/deploy/dranbs
+ExecStart=/home/deploy/dranbs/venv/bin/gunicorn --access-logfile - --workers 3 --bind unix:/home/deploy/dranbs/dranbs.sock bigaray.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
+```
