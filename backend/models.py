@@ -8,6 +8,7 @@ from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from django_admin_listfilter_dropdown.filters import DropdownFilter
 
 
 class Site(models.Model):
@@ -97,7 +98,11 @@ class ProductAdmin(admin.ModelAdmin):
         'id', 'site', 'title', 'image_preview', 'price', 'sale_price', 'show_product_link',
         'get_gender', 'status', 'inserted_at', 'updated_at')
     search_fields = ('title', 'price', 'sale_price', 'product_link',)
-    list_filter = ('site', 'site__gender', 'status')
+    list_filter = (
+        ('site__name', DropdownFilter),
+        ('site__gender', DropdownFilter),
+        ('status', DropdownFilter)
+    )
     readonly_fields = ('image_preview',)
     list_per_page = 50
 

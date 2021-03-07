@@ -1,5 +1,6 @@
-from django.contrib.auth.models import User
-from django.http import JsonResponse
+import mimetypes
+
+from django.http import JsonResponse, HttpResponse
 from django.views import View
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -49,7 +50,7 @@ class CustomAuthToken(ObtainAuthToken):
             'meta': {
                 'token': token.key
             },
-            'data': {
+            'user': {
                 'id': user.id,
                 'username': user.username,
                 'email': user.email,
@@ -60,6 +61,14 @@ class CustomAuthToken(ObtainAuthToken):
                 'last_login': user.last_login,
             }
         })
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        request.user.auth_token.delete()
+        return Response(status=status.HTTP_200_OK)
 
 
 class UserCreateView(APIView):
@@ -92,13 +101,15 @@ class UserCreateView(APIView):
             return response
 
 
-class UserUpdateView(APIView):
-    def patch(self, request, pk):
-        user = User.objects.get(pk=pk)
+class ProfileUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
         user_data = request.data['user']
         serializer = UserSerializer(data=user_data, instance=user)
         if serializer.is_valid():
-            user = serializer.save()
+            serializer.save()
             return Response({
                 'message': 'Success'
             })
@@ -113,13 +124,28 @@ class HomePageDataView(APIView):
         page_number = int(request.GET.get('page', 0))
         site_type = request.GET.get('site_type', 0)
         explore_all = request.GET.get('all', False)
+        gender = int(request.GET.get('gender', 0))
 
         user = request.user
         offset = page_number * 60
         if explore_all == 'false':
-            products = Product.objects.raw("SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id LEFT JOIN user_site us on sites.id = us.site_id WHERE us.user_id=%s AND sites.type=%s ORDER BY random() LIMIT 60 OFFSET %s", [user.id, site_type, offset])
+            if gender == 0:
+                products = Product.objects.raw(
+                    "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id LEFT JOIN user_site us on sites.id = us.site_id WHERE us.user_id=%s AND sites.type=%s ORDER BY random() LIMIT 60 OFFSET %s",
+                    [user.id, site_type, offset])
+            else:
+                products = Product.objects.raw(
+                    "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id LEFT JOIN user_site us on sites.id = us.site_id WHERE us.user_id=%s AND sites.type=%s AND sites.gender=%s ORDER BY random() LIMIT 60 OFFSET %s",
+                    [user.id, site_type, gender, offset])
         else:
-            products = Product.objects.raw("SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s ORDER BY random() LIMIT 60 OFFSET %s", [site_type, offset])
+            if gender == 0:
+                products = Product.objects.raw(
+                    "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s ORDER BY random() LIMIT 60 OFFSET %s",
+                    [site_type, offset])
+            else:
+                products = Product.objects.raw(
+                    "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.gender=%s ORDER BY random() LIMIT 60 OFFSET %s",
+                    [site_type, gender, offset])
 
         product_list = []
         for product in products:
@@ -144,7 +170,7 @@ class HomePageDataView(APIView):
 class SiteListView(View):
     def get(self, request):
         sites = Site.objects.all().values('id', 'name', 'display_name',
-                                          'scrape_url', 'short_url',)
+                                          'scrape_url', 'short_url', )
         site_list = list(sites)
         result = {
             'data': site_list
@@ -158,7 +184,7 @@ class MyBrandsView(APIView):
 
     def get(self, request):
         sites = Site.objects.all().values('id', 'name', 'display_name',
-                                          'scrape_url', 'short_url', 'gender',)
+                                          'scrape_url', 'short_url', 'gender', )
         site_list = list(sites)
         user_sites = UserSite.objects.filter(user=request.user).values('id', 'site_id', 'user_id')
         user_site_list = list(user_sites)
@@ -185,7 +211,7 @@ class ToggleUserSiteView(APIView):
                 UserSite.objects.filter(user=request.user, site_id=pk).delete()
 
         sites = Site.objects.all().values('id', 'name', 'display_name',
-                                          'scrape_url', 'short_url', 'gender',)
+                                          'scrape_url', 'short_url', 'gender', )
         site_list = list(sites)
         user_sites = UserSite.objects.filter(user=request.user).values('user_id', 'site_id')
         user_site_list = list(user_sites)
@@ -205,7 +231,9 @@ class ProductsByBrandView(APIView):
         user = request.user
 
         offset = page_number * 60
-        products = Product.objects.raw("SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.name=%s ORDER BY random() LIMIT 60 OFFSET %s", [site_type, name, offset])
+        products = Product.objects.raw(
+            "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.name=%s ORDER BY random() LIMIT 60 OFFSET %s",
+            [site_type, name, offset])
         # products = Product.objects.raw("SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id LEFT JOIN user_site us on sites.id = us.site_id WHERE sites.type=%s AND sites.name=%s ORDER BY random() LIMIT 60 OFFSET %s", [site_type, name, offset])
         product_list = []
         for product in products:
@@ -225,3 +253,15 @@ class ProductsByBrandView(APIView):
             'data': product_list
         }
         return Response(result)
+
+
+class ImageView(View):
+    def get(self, request, subdir, filename):
+        try:
+            with open("/home/deploy/images/{0}/{1}".format(subdir, filename), "rb") as f:
+                mime = mimetypes.MimeTypes().guess_type("/home/deploy/images/{0}/{1}".format(subdir, filename))[0]
+                response = HttpResponse(f.read(), content_type=mime)
+                return response
+        except IOError:
+            response = HttpResponse(status=404)
+            return response

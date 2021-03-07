@@ -14,6 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 import os
+
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
@@ -21,8 +22,8 @@ from django.urls import path, include
 from bigaray.settings import base
 
 urlpatterns = [
-    path(os.getenv('SECRET_ADMIN_URL') + 'backend/', admin.site.urls),
-    path('backend/', include('backend.urls'))
+    path(os.getenv('SECRET_ADMIN_URL') + 'admin/', admin.site.urls),
+    path('', include('backend.urls'))
 ]
 urlpatterns += static(base.STATIC_URL, document_root=base.STATIC_ROOT)
 urlpatterns += static(base.MEDIA_URL, document_root=base.MEDIA_ROOT)
