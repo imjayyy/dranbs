@@ -154,3 +154,16 @@ class UserProfile(models.Model):
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'gender', 'birthday', 'country')
     list_filter = ('gender', 'birthday', 'country',)
+
+
+class BrandFollower(models.Model):
+    brand_name = models.CharField(max_length=255)
+    user = models.ForeignKey(User, related_name='follower', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'brand_followers'
+
+
+class BrandFollowerAdmin(admin.ModelAdmin):
+    list_display = ('brand_name', 'user',)
+    list_filter = ('brand_name',)

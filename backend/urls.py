@@ -2,7 +2,8 @@ from django.conf import settings
 from django.urls import path
 
 from backend.views import SiteListView, HomePageDataView, CustomAuthToken, ProfileView, MyBrandsView, \
-    ToggleUserSiteView, UserCreateView, ProfileUpdateView, ProductsByBrandView, ImageView, LogoutView
+    ToggleUserSiteView, UserCreateView, ProfileUpdateView, ProductsByBrandView, ImageView, LogoutView, \
+    ToggleFollowBrandView, BrandInfoView
 
 urlpatterns = [
     path('api/sessions', CustomAuthToken.as_view()),
@@ -14,7 +15,9 @@ urlpatterns = [
     path('api/homepage-data', HomePageDataView.as_view()),
     path('api/my-profiles', MyBrandsView.as_view()),
     path('api/toggle-users-sites', ToggleUserSiteView.as_view()),
-    path('api/by-brand-name/<name>', ProductsByBrandView.as_view())
+    path('api/by-brand-name/<name>', ProductsByBrandView.as_view()),
+    path('api/toggle-follow-brand', ToggleFollowBrandView.as_view()),
+    path('api/brand/<name>', BrandInfoView.as_view())
 ]
 
 if settings.DEBUG:

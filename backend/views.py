@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from backend.models import Site, Product, UserSite, UserProfile
+from backend.models import Site, Product, UserSite, UserProfile, BrandFollower
 from backend.serializers import UserSerializer
 
 
@@ -227,14 +227,19 @@ class ProductsByBrandView(APIView):
     def get(self, request, name):
         page_number = int(request.GET.get('page', 0))
         site_type = request.GET.get('site_type', 0)
+        gender = int(request.GET.get('gender', 0))
 
         user = request.user
 
         offset = page_number * 60
-        products = Product.objects.raw(
-            "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.name=%s ORDER BY random() LIMIT 60 OFFSET %s",
-            [site_type, name, offset])
-        # products = Product.objects.raw("SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id LEFT JOIN user_site us on sites.id = us.site_id WHERE sites.type=%s AND sites.name=%s ORDER BY random() LIMIT 60 OFFSET %s", [site_type, name, offset])
+        if gender == 0:
+            products = Product.objects.raw(
+                "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.name=%s ORDER BY random() LIMIT 60 OFFSET %s",
+                [site_type, name, offset])
+        else:
+            products = Product.objects.raw(
+                "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.name=%s AND sites.gender=%s ORDER BY random() LIMIT 60 OFFSET %s",
+                [site_type, name, gender, offset])
         product_list = []
         for product in products:
             product_list.append({
@@ -251,6 +256,56 @@ class ProductsByBrandView(APIView):
             })
         result = {
             'data': product_list
+        }
+        return Response(result)
+
+
+class ToggleFollowBrandView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        payload = JSONParser().parse(request)
+        brand_name = payload.get('name')
+        if brand_name:
+            user = request.user
+            try:
+                brand_follower = BrandFollower.objects.get(brand_name=brand_name, user_id=user.id)
+                brand_follower.delete()
+                followers = BrandFollower.objects.filter(brand_name=brand_name).count()
+                result = {
+                    'followers': followers,
+                    'is_following': False
+                }
+                return Response(result)
+            except BrandFollower.DoesNotExist:
+                BrandFollower.objects.create(brand_name=brand_name, user_id=user.id)
+                followers = BrandFollower.objects.filter(brand_name=brand_name).count()
+                result = {
+                    'followers': followers,
+                    'is_following': True
+                }
+                return Response(result)
+        else:
+            result = {
+                'message': 'Bad request'
+            }
+            return Response(result, status=400)
+
+
+class BrandInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, name):
+        followers = BrandFollower.objects.filter(brand_name=name).count()
+        user = request.user
+        try:
+            BrandFollower.objects.get(brand_name=name, user_id=user.id)
+            is_following = True
+        except BrandFollower.DoesNotExist:
+            is_following = False
+        result = {
+            'followers': followers,
+            'is_following': is_following
         }
         return Response(result)
 
