@@ -128,16 +128,7 @@ class HomePageDataView(APIView):
 
         user = request.user
         offset = page_number * 60
-        if explore_all == 'false':
-            if gender == 0:
-                products = Product.objects.raw(
-                    "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id LEFT JOIN user_site us on sites.id = us.site_id WHERE us.user_id=%s AND sites.type=%s ORDER BY random() LIMIT 60 OFFSET %s",
-                    [user.id, site_type, offset])
-            else:
-                products = Product.objects.raw(
-                    "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id LEFT JOIN user_site us on sites.id = us.site_id WHERE us.user_id=%s AND sites.type=%s AND sites.gender=%s ORDER BY random() LIMIT 60 OFFSET %s",
-                    [user.id, site_type, gender, offset])
-        else:
+        if explore_all == 'true':
             if gender == 0:
                 products = Product.objects.raw(
                     "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s ORDER BY random() LIMIT 60 OFFSET %s",
@@ -146,6 +137,29 @@ class HomePageDataView(APIView):
                 products = Product.objects.raw(
                     "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.gender=%s ORDER BY random() LIMIT 60 OFFSET %s",
                     [site_type, gender, offset])
+        else:
+            if gender == 0:
+                sql = """
+                    select p.*
+                    from products p
+                             left join sites s on s.id = p.site_id
+                             left join brand_followers bf on bf.brand_name = s.name
+                    where bf.user_id = %s and s.type = %s order by random() limit 60 offset %s
+                    """
+                products = Product.objects.raw(
+                    sql,
+                    [user.id, site_type, offset])
+            else:
+                sql = """
+                    select p.*
+                    from products p
+                             left join sites s on s.id = p.site_id
+                             left join brand_followers bf on bf.brand_name = s.name
+                    where bf.user_id = %s and s.type = %s and s.gender = %s order by random() limit 60 offset %s
+                    """
+                products = Product.objects.raw(
+                    sql,
+                    [user.id, site_type, gender, offset])
 
         product_list = []
         for product in products:
