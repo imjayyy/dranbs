@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from backend.models import Site, Product, UserSite, UserProfile, BrandFollower
+from backend.models import Site, Product, UserSite, UserProfile, BrandFollower, ProductLove
 from backend.serializers import UserSerializer
 
 
@@ -130,39 +130,58 @@ class HomePageDataView(APIView):
         offset = page_number * 60
         if explore_all == 'true':
             if gender == 0:
-                products = Product.objects.raw(
-                    "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s ORDER BY random() LIMIT 60 OFFSET %s",
-                    [site_type, offset])
-            else:
-                products = Product.objects.raw(
-                    "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.gender=%s ORDER BY random() LIMIT 60 OFFSET %s",
-                    [site_type, gender, offset])
-        else:
-            if gender == 0:
                 sql = """
-                    select p.*
-                    from products p
-                             left join sites s on s.id = p.site_id
-                             left join brand_followers bf on bf.brand_name = s.name
-                    where bf.user_id = %s and s.type = %s order by random() limit 60 offset %s
+                    SELECT p.*, pl.liked
+                    FROM products p 
+                            LEFT JOIN sites s ON p.site_id = s.id
+                            left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id 
+                    WHERE s.type=%s ORDER BY random() LIMIT 60 OFFSET %s
                     """
                 products = Product.objects.raw(
                     sql,
                     [user.id, site_type, offset])
             else:
+                products = Product.objects.raw(
+                    """
+                    SELECT p.*, pl.liked
+                    FROM products p 
+                            LEFT JOIN sites s ON p.site_id = s.id
+                            left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id 
+                    WHERE s.type=%s AND s.gender=%s ORDER BY random() LIMIT 60 OFFSET %s
+                    """,
+                    [user.id, site_type, gender, offset])
+        else:
+            if gender == 0:
                 sql = """
-                    select p.*
+                    select p.*, pl.liked
                     from products p
                              left join sites s on s.id = p.site_id
                              left join brand_followers bf on bf.brand_name = s.name
+                             left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
+                    where bf.user_id = %s and s.type = %s order by random() limit 60 offset %s
+                    """
+                products = Product.objects.raw(
+                    sql,
+                    [user.id, user.id, site_type, offset])
+            else:
+                sql = """
+                    select p.*, pl.liked
+                    from products p
+                             left join sites s on s.id = p.site_id
+                             left join brand_followers bf on bf.brand_name = s.name
+                             left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
                     where bf.user_id = %s and s.type = %s and s.gender = %s order by random() limit 60 offset %s
                     """
                 products = Product.objects.raw(
                     sql,
-                    [user.id, site_type, gender, offset])
+                    [user.id, user.id, site_type, gender, offset])
 
         product_list = []
         for product in products:
+            if product.liked is None:
+                liked = False
+            else:
+                liked = True
             product_list.append({
                 'id': product.id,
                 'title': product.title,
@@ -173,7 +192,8 @@ class HomePageDataView(APIView):
                 'hq_image_filename': product.hq_image_filename,
                 'site': product.site_id,
                 'name': product.site.name,
-                'display_name': product.site.display_name
+                'display_name': product.site.display_name,
+                'liked': liked
             })
         result = {
             'data': product_list
@@ -247,15 +267,33 @@ class ProductsByBrandView(APIView):
 
         offset = page_number * 60
         if gender == 0:
+            sql = """
+            SELECT p.*, pl.liked
+            FROM products p 
+                    LEFT JOIN sites s ON p.site_id = s.id
+                    left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id 
+            WHERE s.type=%s AND s.name=%s ORDER BY random() LIMIT 60 OFFSET %s
+            """
             products = Product.objects.raw(
-                "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.name=%s ORDER BY random() LIMIT 60 OFFSET %s",
-                [site_type, name, offset])
+                sql,
+                [user.id, site_type, name, offset])
         else:
+            sql = """
+            SELECT p.*, pl.liked 
+            FROM products p 
+                    LEFT JOIN sites s ON p.site_id = s.id
+                    left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id 
+            WHERE s.type=%s AND s.name=%s AND s.gender=%s ORDER BY random() LIMIT 60 OFFSET %s
+            """
             products = Product.objects.raw(
-                "SELECT products.* FROM products LEFT JOIN sites ON products.site_id = sites.id WHERE sites.type=%s AND sites.name=%s AND sites.gender=%s ORDER BY random() LIMIT 60 OFFSET %s",
-                [site_type, name, gender, offset])
+                sql,
+                [user.id, site_type, name, gender, offset])
         product_list = []
         for product in products:
+            if product.liked is None:
+                liked = False
+            else:
+                liked = True
             product_list.append({
                 'id': product.id,
                 'title': product.title,
@@ -266,7 +304,8 @@ class ProductsByBrandView(APIView):
                 'hq_image_filename': product.hq_image_filename,
                 'site': product.site_id,
                 'name': product.site.name,
-                'display_name': product.site.display_name
+                'display_name': product.site.display_name,
+                'liked': liked
             })
         result = {
             'data': product_list
@@ -320,6 +359,70 @@ class BrandInfoView(APIView):
         result = {
             'followers': followers,
             'is_following': is_following
+        }
+        return Response(result)
+
+
+class ToggleLoveProduct(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        payload = JSONParser().parse(request)
+        product_id = payload.get('id')
+        user = request.user
+
+        try:
+            product_love = ProductLove.objects.get(product_id=product_id, user_id=user.id)
+            product_love.delete()
+            result = {
+                'is_love': False
+            }
+            return Response(result)
+
+        except ProductLove.DoesNotExist:
+            ProductLove.objects.create(product_id=product_id, user_id=user.id)
+            result = {
+                'is_love': True
+            }
+            return Response(result)
+
+
+class MyLovesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        page_number = int(request.GET.get('page', 0))
+        offset = page_number * 60
+        products = Product.objects.raw(
+            """
+            select p.*, pl.*
+            from (select product_id, user_id liked from product_love where user_id = %s) pl
+                     left join products p on p.id = pl.product_id ORDER BY random() LIMIT 60 OFFSET %s
+            """,
+            [user.id, offset])
+
+        product_list = []
+        for product in products:
+            if product.liked is None:
+                liked = False
+            else:
+                liked = True
+            product_list.append({
+                'id': product.id,
+                'title': product.title,
+                'image_filename': product.image_filename,
+                'price': product.price,
+                'sale_price': product.sale_price,
+                'product_link': product.product_link,
+                'hq_image_filename': product.hq_image_filename,
+                'site': product.site_id,
+                'name': product.site.name,
+                'display_name': product.site.display_name,
+                'liked': liked
+            })
+        result = {
+            'data': product_list
         }
         return Response(result)
 

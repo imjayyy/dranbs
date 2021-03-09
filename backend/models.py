@@ -167,3 +167,15 @@ class BrandFollower(models.Model):
 class BrandFollowerAdmin(admin.ModelAdmin):
     list_display = ('brand_name', 'user',)
     list_filter = ('brand_name',)
+
+
+class ProductLove(models.Model):
+    user = models.ForeignKey(User, related_name='user', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='product', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'product_love'
+
+
+class ProductLoveAdmin(admin.ModelAdmin):
+    list_display = ('user', 'product',)

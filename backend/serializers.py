@@ -5,18 +5,6 @@ from rest_framework import serializers
 from backend.models import UserProfile
 
 
-class UserInfo:
-    def __init__(self, username, email, password, first_name, last_name, gender, birthday, country):
-        self.username = username
-        self.email = email
-        self.password = password
-        self.first_name = first_name
-        self.last_name = last_name
-        self.gender = gender
-        self.birthday = birthday
-        self.country = country
-
-
 class UserSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
@@ -24,8 +12,13 @@ class UserSerializer(serializers.Serializer):
     birthday = serializers.DateField(required=False, allow_null=True)
     country = serializers.CharField(required=False, allow_null=True)
     username = serializers.CharField()
-    password = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-    password_confirm = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        allow_null=True
+    )
+    password_confirm = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
     email = serializers.EmailField()
 
     def update(self, instance, validated_data):

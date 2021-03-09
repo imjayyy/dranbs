@@ -9,7 +9,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 
 from backend.models import Site, Product, SiteAdmin, ProductAdmin, UserProfile, UserProfileAdmin, BrandFollower, \
-    BrandFollowerAdmin
+    BrandFollowerAdmin, ProductLove, ProductLoveAdmin
 
 
 class Stat(models.Model):
@@ -117,3 +117,4 @@ admin.site.register(Product, ProductAdmin)
 admin.site.register(Stat, StatAdmin)
 admin.site.register(UserProfile, UserProfileAdmin)
 admin.site.register(BrandFollower, BrandFollowerAdmin)
+admin.site.register(ProductLove, ProductLoveAdmin)
