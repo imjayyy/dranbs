@@ -1,5 +1,6 @@
 import mimetypes
 
+from django.db import connection
 from django.http import JsonResponse, HttpResponse
 from django.views import View
 from rest_framework import status
@@ -349,6 +350,13 @@ class BrandInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, name):
+        sql = """
+        select count(*) genders from (select gender from sites where name = %s group by gender) g
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(sql, [name])
+            row = cursor.fetchone()
+
         followers = BrandFollower.objects.filter(brand_name=name).count()
         user = request.user
         try:
@@ -358,7 +366,8 @@ class BrandInfoView(APIView):
             is_following = False
         result = {
             'followers': followers,
-            'is_following': is_following
+            'is_following': is_following,
+            'genders': row[0]
         }
         return Response(result)
 
