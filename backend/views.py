@@ -11,8 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from backend.models import Site, Product, UserSite, UserProfile, BrandFollower, ProductLove
-from backend.serializers import UserSerializer
+from backend.models import Site, Product, UserSite, UserProfile, BrandFollower, ProductLove, Board, BoardProduct
+from backend.serializers import UserSerializer, CreateBoardSerializer, BoardSerializer, BoardProductSerializer
 
 
 class ProfileView(APIView):
@@ -132,50 +132,54 @@ class HomePageDataView(APIView):
         if explore_all == 'true':
             if gender == 0:
                 sql = """
-                    SELECT p.*, pl.liked
+                    SELECT p.*, pl.liked, bp.followed
                     FROM products p 
                             LEFT JOIN sites s ON p.site_id = s.id
-                            left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id 
+                            left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
+                            left join (select product_id, user_id followed from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
                     WHERE s.type=%s ORDER BY random() LIMIT 60 OFFSET %s
-                    """
-                products = Product.objects.raw(
-                    sql,
-                    [user.id, site_type, offset])
-            else:
-                products = Product.objects.raw(
-                    """
-                    SELECT p.*, pl.liked
-                    FROM products p 
-                            LEFT JOIN sites s ON p.site_id = s.id
-                            left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id 
-                    WHERE s.type=%s AND s.gender=%s ORDER BY random() LIMIT 60 OFFSET %s
-                    """,
-                    [user.id, site_type, gender, offset])
-        else:
-            if gender == 0:
-                sql = """
-                    select p.*, pl.liked
-                    from products p
-                             left join sites s on s.id = p.site_id
-                             left join brand_followers bf on bf.brand_name = s.name
-                             left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
-                    where bf.user_id = %s and s.type = %s order by random() limit 60 offset %s
                     """
                 products = Product.objects.raw(
                     sql,
                     [user.id, user.id, site_type, offset])
             else:
+                products = Product.objects.raw(
+                    """
+                    SELECT p.*, pl.liked, bp.followed
+                    FROM products p 
+                            LEFT JOIN sites s ON p.site_id = s.id
+                            left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
+                            left join (select product_id, user_id followed from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
+                    WHERE s.type=%s AND s.gender=%s ORDER BY random() LIMIT 60 OFFSET %s
+                    """,
+                    [user.id, user.id, site_type, gender, offset])
+        else:
+            if gender == 0:
                 sql = """
-                    select p.*, pl.liked
+                    select p.*, pl.liked, bp.followed
                     from products p
                              left join sites s on s.id = p.site_id
                              left join brand_followers bf on bf.brand_name = s.name
                              left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
+                             left join (select product_id, user_id followed from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id
+                    where bf.user_id = %s and s.type = %s order by random() limit 60 offset %s
+                    """
+                products = Product.objects.raw(
+                    sql,
+                    [user.id, user.id, user.id, site_type, offset])
+            else:
+                sql = """
+                    select p.*, pl.liked, bp.followed
+                    from products p
+                             left join sites s on s.id = p.site_id
+                             left join brand_followers bf on bf.brand_name = s.name
+                             left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
+                             left join (select product_id, user_id followed from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
                     where bf.user_id = %s and s.type = %s and s.gender = %s order by random() limit 60 offset %s
                     """
                 products = Product.objects.raw(
                     sql,
-                    [user.id, user.id, site_type, gender, offset])
+                    [user.id, user.id, user.id, site_type, gender, offset])
 
         product_list = []
         for product in products:
@@ -183,6 +187,10 @@ class HomePageDataView(APIView):
                 liked = False
             else:
                 liked = True
+            if product.followed is None:
+                followed = False
+            else:
+                followed = True
             product_list.append({
                 'id': product.id,
                 'title': product.title,
@@ -194,7 +202,8 @@ class HomePageDataView(APIView):
                 'site': product.site_id,
                 'name': product.site.name,
                 'display_name': product.site.display_name,
-                'liked': liked
+                'liked': liked,
+                'followed': followed,
             })
         result = {
             'data': product_list
@@ -434,6 +443,77 @@ class MyLovesView(APIView):
             'data': product_list
         }
         return Response(result)
+
+
+class BoardsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        product_id = int(request.GET.get('product_id', -1))
+        user = request.user
+
+        sql = """
+        select b.id, b.name, bp.product_id saved
+        from boards b
+                 left join (select * from board_product where product_id = %s and user_id = %s) bp on b.id = bp.board_id
+        where b.type = 1
+        """
+        boards = Board.objects.raw(sql, [product_id, user.id])
+        board_list = []
+        for board in boards:
+            if board.saved is None:
+                saved = False
+            else:
+                saved = True
+            board_list.append({
+                'id': board.id,
+                'name': board.name,
+                'saved': saved  # TODO: change to 'followed'
+            })
+        return Response({
+            'data': board_list,
+            'product_id': product_id,
+        })
+
+    def post(self, request):
+        serializer = CreateBoardSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        board_name = serializer.validated_data['board_name']
+        board_type = serializer.validated_data['board_type']
+        product_id = serializer.validated_data['product_id']
+        product = Product.objects.get(pk=product_id)
+        image_filename = product.image_filename
+
+        board = Board.objects.create(name=board_name, type=board_type, user_id=user.id, image_filename=image_filename)
+        board_serializer = BoardSerializer(board)
+        BoardProduct.objects.create(product_id=product_id, board_id=board.id, user_id=user.id)
+        return Response({
+            'board': board_serializer.data,
+            'saved': True
+        })
+
+
+class ProductToggleSaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = BoardProductSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        board = serializer.validated_data['board']
+        product = serializer.validated_data['product']
+        try:
+            board_product = BoardProduct.objects.get(user_id=request.user.id, board_id=board.id, product_id=product.id)
+            board_product.delete()
+            return Response({
+                'saved': False
+            })
+        except BoardProduct.DoesNotExist:
+            serializer.save(user=request.user)
+            return Response({
+                'saved': True
+            })
 
 
 class ImageView(View):

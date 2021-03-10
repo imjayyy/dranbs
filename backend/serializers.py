@@ -2,7 +2,7 @@ from django.contrib.auth import password_validation
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from backend.models import UserProfile
+from backend.models import UserProfile, Product, Board, BoardProduct
 
 
 class UserSerializer(serializers.Serializer):
@@ -86,3 +86,34 @@ class UserSerializer(serializers.Serializer):
                     "password_confirm": "password doesn't match"
                 })
         return data
+
+
+class CreateBoardSerializer(serializers.Serializer):
+    board_name = serializers.CharField()
+    board_type = serializers.ChoiceField(choices=[0, 1])
+    product_id = serializers.IntegerField()
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+    def validate_product_id(self, value):
+        try:
+            Product.objects.get(pk=value)
+            return value
+        except Product.DoesNotExist:
+            raise serializers.ValidationError("product doesn't exists.")
+
+
+class BoardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Board
+        fields = '__all__'
+
+
+class BoardProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BoardProduct
+        fields = ['product', 'board']

@@ -3,7 +3,7 @@ from django.urls import path
 
 from backend.views import SiteListView, HomePageDataView, CustomAuthToken, ProfileView, MyBrandsView, \
     ToggleUserSiteView, UserCreateView, ProfileUpdateView, ProductsByBrandView, ImageView, LogoutView, \
-    ToggleFollowBrandView, BrandInfoView, ToggleLoveProduct, MyLovesView
+    ToggleFollowBrandView, BrandInfoView, ToggleLoveProduct, MyLovesView, BoardsView, ProductToggleSaveView
 
 urlpatterns = [
     path('api/sessions', CustomAuthToken.as_view()),
@@ -20,6 +20,8 @@ urlpatterns = [
     path('api/brand/<name>', BrandInfoView.as_view()),
     path('api/toggle-love-product', ToggleLoveProduct.as_view()),
     path('api/my-loves', MyLovesView.as_view()),
+    path('api/boards', BoardsView.as_view()),
+    path('api/toggle-product-saved', ProductToggleSaveView.as_view())
 ]
 
 if settings.DEBUG:

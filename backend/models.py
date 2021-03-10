@@ -158,7 +158,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 class BrandFollower(models.Model):
     brand_name = models.CharField(max_length=255)
-    user = models.ForeignKey(User, related_name='follower', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'brand_followers'
@@ -170,8 +170,8 @@ class BrandFollowerAdmin(admin.ModelAdmin):
 
 
 class ProductLove(models.Model):
-    user = models.ForeignKey(User, related_name='user', on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, related_name='product', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'product_love'
@@ -179,3 +179,42 @@ class ProductLove(models.Model):
 
 class ProductLoveAdmin(admin.ModelAdmin):
     list_display = ('user', 'product',)
+
+
+class Board(models.Model):
+    BOARD_TYPES = [
+        (1, 'Public'),
+        (0, 'Private')
+    ]
+    name = models.CharField(max_length=255)
+    type = models.IntegerField(choices=BOARD_TYPES)
+    image_filename = models.CharField(max_length=255)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'boards'
+
+    @property
+    def image_preview(self):
+        if self.image_filename:
+            return mark_safe('<img src="/images/{0}" width="100" height="150" />'.format(self.image_filename))
+        else:
+            return ""
+
+
+class BoardAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'type', 'user', 'image_preview',)
+    readonly_fields = ('image_preview',)
+
+
+class BoardProduct(models.Model):
+    board = models.ForeignKey(Board, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'board_product'
+
+
+class BoardProductAdmin(admin.ModelAdmin):
+    list_display = ('board', 'product',)
