@@ -186,7 +186,7 @@ class Board(models.Model):
         (1, 'Public'),
         (0, 'Private')
     ]
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     type = models.IntegerField(choices=BOARD_TYPES)
     image_filename = models.CharField(max_length=255)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -218,3 +218,15 @@ class BoardProduct(models.Model):
 
 class BoardProductAdmin(admin.ModelAdmin):
     list_display = ('board', 'product',)
+
+
+class BoardFollower(models.Model):
+    board = models.ForeignKey(Board, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'board_follower'
+
+
+class BoardFollowerAdmin(admin.ModelAdmin):
+    list_display = ('board', 'user')
