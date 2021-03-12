@@ -475,26 +475,20 @@ class BoardsView(APIView):
             sql = """
             select b.id, b.name, bp.product_id saved
             from boards b
-                     left join (select * from board_product where product_id = %s and user_id = %s) bp on b.id = bp.board_id
-            where b.type = 1
-            union (
-            select b.id, b.name, bp.product_id saved
-            from boards b
-                     left join (select * from board_product where product_id = %s and user_id = %s) bp on b.id = bp.board_id
-            where b.type = 0 and b.user_id = %s
-            )
+                     left join (select * from board_product where product_id = %s and user_id = %s) bp on bp.board_id = b.id
+            where b.user_id = %s
             """
 
-            boards = Board.objects.raw(sql, [product_id, user.id, product_id, user.id, user.id])
+            boards = Board.objects.raw(sql, [product_id, user.id, user.id,])
             for board in boards:
                 if board.saved is None:
-                    is_following = False
+                    saved = False
                 else:
-                    is_following = True
+                    saved = True
                 board_list.append({
                     'id': board.id,
                     'name': board.name,
-                    'saved': is_following
+                    'saved': saved
                 })
             return Response({
                 'data': board_list,
