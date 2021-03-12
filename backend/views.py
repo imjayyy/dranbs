@@ -1,7 +1,6 @@
 import mimetypes
 import uuid
 
-from django.core.files.storage import FileSystemStorage
 from django.db import connection
 from django.http import JsonResponse, HttpResponse
 from django.views import View
@@ -282,25 +281,26 @@ class ProductsByBrandView(APIView):
         offset = page_number * 60
         if gender == 0:
             sql = """
-            SELECT p.*, pl.liked, bp.saved
-            FROM products p 
-                    LEFT JOIN sites s ON p.site_id = s.id
-                    left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
-                    left join (select product_id, user_id saved from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
-            WHERE s.type=%s AND s.name=%s ORDER BY random() LIMIT 60 OFFSET %s
-            """
+                SELECT p.*, pl.liked, bp.saved
+                FROM products p 
+                        LEFT JOIN sites s ON p.site_id = s.id
+                        left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
+                        left join (select product_id, user_id saved from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
+                WHERE s.type=%s AND s.name=%s ORDER BY random() LIMIT 60 OFFSET %s
+                """
+
             products = Product.objects.raw(
                 sql,
                 [user.id, user.id, site_type, name, offset])
         else:
             sql = """
-            SELECT p.*, pl.liked, bp.saved
-            FROM products p 
-                    LEFT JOIN sites s ON p.site_id = s.id
-                    left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
-                    left join (select product_id, user_id saved from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
-            WHERE s.type=%s AND s.name=%s AND s.gender=%s ORDER BY random() LIMIT 60 OFFSET %s
-            """
+                SELECT p.*, pl.liked, bp.saved
+                FROM products p 
+                        LEFT JOIN sites s ON p.site_id = s.id
+                        left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
+                        left join (select product_id, user_id saved from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
+                WHERE s.type=%s AND s.name=%s AND s.gender=%s ORDER BY random() LIMIT 60 OFFSET %s
+                """
             products = Product.objects.raw(
                 sql,
                 [user.id, user.id, site_type, name, gender, offset])
@@ -371,8 +371,8 @@ class BrandInfoView(APIView):
 
     def get(self, request, name):
         sql = """
-        select count(*) genders from (select gender from sites where name = %s group by gender) g
-        """
+            select count(*) genders from (select gender from sites where name = %s group by gender) g
+            """
         with connection.cursor() as cursor:
             cursor.execute(sql, [name])
             row = cursor.fetchone()
@@ -473,11 +473,11 @@ class BoardsView(APIView):
         board_list = []
         if product_id:
             sql = """
-            select b.id, b.name, bp.product_id saved
-            from boards b
-                     left join (select * from board_product where product_id = %s and user_id = %s) bp on bp.board_id = b.id
-            where b.user_id = %s
-            """
+                select b.id, b.name, bp.product_id saved
+                from boards b
+                         left join (select * from board_product where product_id = %s and user_id = %s) bp on bp.board_id = b.id
+                where b.user_id = %s
+                """
 
             boards = Board.objects.raw(sql, [product_id, user.id, user.id,])
             for board in boards:
@@ -498,22 +498,22 @@ class BoardsView(APIView):
             page_number = int(request.GET.get('page'))
             offset = page_number * 60
             sql = """
-            select * from (select b.id, name, type, image_filename, username, followers
-            from boards b
-                     left join auth_user au on b.user_id = au.id
-                     left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
-                               on b.id = bf.board_id
-            where b.type = 1
-            union (
-            select b.id, name, type, image_filename, username, followers
-            from boards b
-                     left join auth_user au on b.user_id = au.id
-                     left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
-                               on b.id = bf.board_id
-            where b.type = 0 and b.user_id = %s
-            )) foo
-            order by random() limit 60 offset %s
-            """
+                select * from (select b.id, name, type, image_filename, username, followers
+                from boards b
+                         left join auth_user au on b.user_id = au.id
+                         left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
+                                   on b.id = bf.board_id
+                where b.type = 1
+                union (
+                select b.id, name, type, image_filename, username, followers
+                from boards b
+                         left join auth_user au on b.user_id = au.id
+                         left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
+                                   on b.id = bf.board_id
+                where b.type = 0 and b.user_id = %s
+                )) foo
+                order by random() limit 60 offset %s
+                """
             boards = Board.objects.raw(sql, [user.id, offset])
             for board in boards:
                 if board.followers is not None:
@@ -555,17 +555,30 @@ class BoardsByCreatorView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, username):
+        user = request.user
         page_number = int(request.GET.get('page'))
         offset = page_number * 60
-        sql = """
-        select b.id, name, type, image_filename, username, followers
-        from boards b
-                 left join auth_user au on b.user_id = au.id
-                 left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
-                           on b.id = bf.board_id
-        where b.type = 1 and au.username = %s
-        order by random() limit 60 offset %s
-        """
+
+        if user.username == username:
+            sql = """
+                select b.id, name, type, image_filename, username, followers
+                from boards b
+                         left join auth_user au on b.user_id = au.id
+                         left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
+                                   on b.id = bf.board_id
+                where au.username = %s
+                order by random() limit 60 offset %s
+                """
+        else:
+            sql = """
+                select b.id, name, type, image_filename, username, followers
+                from boards b
+                         left join auth_user au on b.user_id = au.id
+                         left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
+                                   on b.id = bf.board_id
+                where b.type = 1 and au.username = %s
+                order by random() limit 60 offset %s
+                """
         board_list = []
         boards = Board.objects.raw(sql, [username, offset])
         for board in boards:
@@ -667,10 +680,14 @@ class BoardInfoView(APIView):
 
     def post(self, request, name):
         payload = JSONParser().parse(request)
-        type = payload.get("type")
+        board_type = payload.get("type")
+        board_name = payload.get('name')
         user = request.user
         board = Board.objects.get(user_id=user.id, name=name)
-        board.type = type
+        if board_type:
+            board.type = board_type
+        if board_name:
+            board.name = board_name
         board.save()
         return Response({
             'type': board.type
