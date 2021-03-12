@@ -701,6 +701,41 @@ class ProductToggleSaveView(APIView):
             })
 
 
+class MyFollowingsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        page_number = int(request.GET.get('page'))
+        offset = page_number * 60
+        sql = """
+        select b.id, name, type, image_filename, username, followers
+        from boards b
+                 left join auth_user au on b.user_id = au.id
+                 left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
+                           on b.id = bf.board_id
+        where b.type = 1 and au.id = %s
+        order by random() limit 60 offset %s
+        """
+        board_list = []
+        boards = Board.objects.raw(sql, [user.id, offset])
+        for board in boards:
+            if board.followers is not None:
+                followers = board.followers
+            else:
+                followers = 0
+            board_list.append({
+                'id': board.id,
+                'name': board.name,
+                'image_filename': board.image_filename,
+                'username': board.username,
+                'followers': followers,
+            })
+        return Response({
+            'data': board_list,
+        })
+
+
 class ImageView(View):
     def get(self, request, subdir, filename):
         try:
