@@ -189,6 +189,7 @@ class Board(models.Model):
     name = models.CharField(max_length=255, unique=True)
     type = models.IntegerField(choices=BOARD_TYPES)
     image_filename = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
