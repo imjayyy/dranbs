@@ -1,5 +1,7 @@
 import mimetypes
+import uuid
 
+from django.core.files.storage import FileSystemStorage
 from django.db import connection
 from django.http import JsonResponse, HttpResponse
 from django.views import View
@@ -11,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from backend.forms import UploadFileForm
 from backend.models import Site, Product, UserSite, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
     BoardFollower
 from backend.serializers import UserSerializer, CreateBoardSerializer, BoardSerializer, BoardProductSerializer
@@ -474,8 +477,15 @@ class BoardsView(APIView):
             from boards b
                      left join (select * from board_product where product_id = %s and user_id = %s) bp on b.id = bp.board_id
             where b.type = 1
+            union (
+            select b.id, b.name, bp.product_id saved
+            from boards b
+                     left join (select * from board_product where product_id = %s and user_id = %s) bp on b.id = bp.board_id
+            where b.type = 0 and b.user_id = %s
+            )
             """
-            boards = Board.objects.raw(sql, [product_id, user.id])
+
+            boards = Board.objects.raw(sql, [product_id, user.id, product_id, user.id, user.id])
             for board in boards:
                 if board.saved is None:
                     is_following = False
@@ -494,15 +504,23 @@ class BoardsView(APIView):
             page_number = int(request.GET.get('page'))
             offset = page_number * 60
             sql = """
-            select b.id, name, type, image_filename, username, followers
+            select * from (select b.id, name, type, image_filename, username, followers
             from boards b
                      left join auth_user au on b.user_id = au.id
                      left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
                                on b.id = bf.board_id
             where b.type = 1
+            union (
+            select b.id, name, type, image_filename, username, followers
+            from boards b
+                     left join auth_user au on b.user_id = au.id
+                     left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
+                               on b.id = bf.board_id
+            where b.type = 0 and b.user_id = %s
+            )) foo
             order by random() limit 60 offset %s
             """
-            boards = Board.objects.raw(sql, [offset])
+            boards = Board.objects.raw(sql, [user.id, offset])
             for board in boards:
                 if board.followers is not None:
                     followers = board.followers
@@ -556,6 +574,43 @@ class BoardsByCreatorView(APIView):
         """
         board_list = []
         boards = Board.objects.raw(sql, [username, offset])
+        for board in boards:
+            if board.followers is not None:
+                followers = board.followers
+            else:
+                followers = 0
+            board_list.append({
+                'id': board.id,
+                'name': board.name,
+                'image_filename': board.image_filename,
+                'username': board.username,
+                'followers': followers,
+            })
+        return Response({
+            'data': board_list,
+        })
+
+
+class MyBoardsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        page_number = int(request.GET.get('page'))
+        offset = page_number * 60
+        user = request.user
+
+        sql = """
+        select b.id, name, type, image_filename, username, followers
+        from boards b
+                 left join auth_user au on b.user_id = au.id
+                 left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
+                           on b.id = bf.board_id
+        where au.id = %s
+        order by random() limit 60 offset %s
+        """
+
+        board_list = []
+        boards = Board.objects.raw(sql, [user.id, offset])
         for board in boards:
             if board.followers is not None:
                 followers = board.followers
@@ -627,18 +682,72 @@ class BoardInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, name):
-        followers = BoardFollower.objects.filter(board__name=name).count()
         user = request.user
+        board = Board.objects.get(name=name)
+
+        followers = BoardFollower.objects.filter(board__name=name).count()
         try:
             BoardFollower.objects.get(board__name=name, user_id=user.id)
             is_following = True
         except BoardFollower.DoesNotExist:
             is_following = False
+
+        if board.user_id == user.id:
+            is_mine = True
+        else:
+            is_mine = False
+
         result = {
+            'name': board.name,
+            'type': board.type,
+            'image_filename': board.image_filename,
+            'description': board.description,
+            'is_mine': is_mine,
             'followers': followers,
             'is_following': is_following,
         }
         return Response(result)
+
+    def post(self, request, name):
+        payload = JSONParser().parse(request)
+        type = payload.get("type")
+        user = request.user
+        board = Board.objects.get(user_id=user.id, name=name)
+        board.type = type
+        board.save()
+        return Response({
+            'type': board.type
+        })
+
+    def delete(self, request, name):
+        user = request.user
+        Board.objects.filter(name=name, user_id=user.id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BoardImageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, name):
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = request.FILES['file']
+            filename = file.name
+            extension = filename.split(".")[-1]
+            filename = uuid.uuid4().hex
+            filename = "{0}.{1}".format(filename, extension)
+            with open("/home/deploy/images/boards/{0}".format(filename), 'wb+') as dest:
+                for chunk in file.chunks():
+                    dest.write(chunk)
+
+                board = Board.objects.get(name=name)
+                board.image_filename = "boards/{0}".format(filename)
+                board.save()
+
+            return Response({
+                'message': 'OK',
+            })
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class ToggleFollowBoardView(APIView):
