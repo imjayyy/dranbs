@@ -585,43 +585,6 @@ class BoardsByCreatorView(APIView):
         })
 
 
-class MyBoardsView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        page_number = int(request.GET.get('page'))
-        offset = page_number * 60
-        user = request.user
-
-        sql = """
-        select b.id, name, type, image_filename, username, followers
-        from boards b
-                 left join auth_user au on b.user_id = au.id
-                 left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
-                           on b.id = bf.board_id
-        where au.id = %s
-        order by random() limit 60 offset %s
-        """
-
-        board_list = []
-        boards = Board.objects.raw(sql, [user.id, offset])
-        for board in boards:
-            if board.followers is not None:
-                followers = board.followers
-            else:
-                followers = 0
-            board_list.append({
-                'id': board.id,
-                'name': board.name,
-                'image_filename': board.image_filename,
-                'username': board.username,
-                'followers': followers,
-            })
-        return Response({
-            'data': board_list,
-        })
-
-
 class ProductsByBoardNameView(APIView):
     permission_classes = [IsAuthenticated]
 

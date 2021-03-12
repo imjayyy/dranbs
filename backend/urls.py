@@ -4,8 +4,7 @@ from django.urls import path
 from backend.views import SiteListView, HomePageDataView, CustomAuthToken, ProfileView, MyBrandsView, \
     ToggleUserSiteView, UserCreateView, ProfileUpdateView, ProductsByBrandView, ImageView, LogoutView, \
     ToggleFollowBrandView, BrandInfoView, ToggleLoveProduct, MyLovesView, BoardsView, ProductToggleSaveView, \
-    BoardsByCreatorView, ProductsByBoardNameView, BoardInfoView, ToggleFollowBoardView, MyFollowingsView, MyBoardsView, \
-    BoardImageView
+    BoardsByCreatorView, ProductsByBoardNameView, BoardInfoView, ToggleFollowBoardView, MyFollowingsView, BoardImageView
 
 urlpatterns = [
     path('api/sessions', CustomAuthToken.as_view()),
@@ -24,7 +23,6 @@ urlpatterns = [
     path('api/my-loves', MyLovesView.as_view()),
     path('api/boards', BoardsView.as_view()),
     path('api/boards-by-creator/<username>', BoardsByCreatorView.as_view()),
-    path('api/my-boards', MyBoardsView.as_view()),
     path('api/products-by-board-name/<name>', ProductsByBoardNameView.as_view()),
     path('api/toggle-product-saved', ProductToggleSaveView.as_view()),
     path('api/board/<name>', BoardInfoView.as_view()),
