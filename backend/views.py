@@ -817,15 +817,18 @@ class MyFollowingsView(APIView):
         user = request.user
         page_number = int(request.GET.get('page'))
         offset = page_number * 60
+
         sql = """
-        select b.id, name, type, image_filename, username, followers
-        from boards b
+        select b.*, bf2.followers, au.username, bf.user_id follower_id
+        from board_follower bf
+                 left join boards b on bf.board_id = b.id
+                 left join (select board_id, count(board_id) followers from board_follower group by board_id) bf2
+                           on bf2.board_id = b.id
                  left join auth_user au on b.user_id = au.id
-                 left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
-                           on b.id = bf.board_id
-        where b.type = 1 and au.id = %s
+        where b.type = 1 and bf.user_id= %s
         order by random() limit 60 offset %s
         """
+
         board_list = []
         boards = Board.objects.raw(sql, [user.id, offset])
         for board in boards:
