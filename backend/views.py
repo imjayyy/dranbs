@@ -405,9 +405,12 @@ class BrandInfoView(APIView):
         sql = """
             select count(*) genders from (select gender from sites where name = %s group by gender) g
             """
+        sql2 = "select display_name from sites where name = %s"
         with connection.cursor() as cursor:
             cursor.execute(sql, [name])
             row = cursor.fetchone()
+            cursor.execute(sql2, [name])
+            row2 = cursor.fetchone()
 
         followers = BrandFollower.objects.filter(brand_name=name).count()
         user = request.user
@@ -419,7 +422,8 @@ class BrandInfoView(APIView):
         result = {
             'followers': followers,
             'is_following': is_following,
-            'genders': row[0]
+            'genders': row[0],
+            'display_name': row2[0]
         }
         return Response(result)
 
