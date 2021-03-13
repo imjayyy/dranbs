@@ -280,8 +280,8 @@ class ProductsByBrandView(APIView):
         period = int(request.GET.get("period"))
         now = timezone.now()
         if period == 1:
-            start_time = now.strftime("%Y-%m-%d 00:00:00")
-            end_time = now.strftime("%Y-%m-%d 23:59:59")
+            start_time = now.strftime("'%Y-%m-%d 00:00:00'")
+            end_time = now.strftime("'%Y-%m-%d 23:59:59'")
             period_condition = "and p.inserted_at between {0} and {1}".format(start_time, end_time)
         # if period == 7:
         #     start_time = now.strftime("%Y-%m-%d 00:00:00")
