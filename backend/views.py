@@ -133,6 +133,20 @@ class HomePageDataView(APIView):
         gender = int(request.GET.get('gender', 0))
         period = int(request.GET.get("period"))
 
+        now = timezone.now()
+        if period == 1:
+            start_time = now.strftime("'%Y-%m-%d 00:00:00'")
+            end_time = now.strftime("'%Y-%m-%d 23:59:59'")
+            period_condition = "and p.inserted_at between {0} and {1}".format(start_time, end_time)
+        elif period == 7:
+            start_of_week = now - timedelta(days=now.weekday())
+            end_of_week = start_of_week + timedelta(days=6)
+            start_time = start_of_week.strftime("'%Y-%m-%d 00:00:00'")
+            end_time = end_of_week.strftime("'%Y-%m-%d 23:59:59'")
+            period_condition = "and p.inserted_at between {0} and {1}".format(start_time, end_time)
+        else:
+            period_condition = ""
+
         user = request.user
         offset = page_number * 60
         if explore_all == 'true':
@@ -143,21 +157,22 @@ class HomePageDataView(APIView):
                             LEFT JOIN sites s ON p.site_id = s.id
                             left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
                             left join (select product_id, user_id saved from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
-                    WHERE s.type=%s ORDER BY random() LIMIT 60 OFFSET %s
-                    """
+                    WHERE s.type=%s {0} ORDER BY random() LIMIT 60 OFFSET %s
+                    """.format(period_condition)
                 products = Product.objects.raw(
                     sql,
                     [user.id, user.id, site_type, offset])
             else:
-                products = Product.objects.raw(
-                    """
+                sql = """
                     SELECT p.*, pl.liked, bp.saved
                     FROM products p 
                             LEFT JOIN sites s ON p.site_id = s.id
                             left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
                             left join (select product_id, user_id saved from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
-                    WHERE s.type=%s AND s.gender=%s ORDER BY random() LIMIT 60 OFFSET %s
-                    """,
+                    WHERE s.type=%s AND s.gender=%s {0} ORDER BY random() LIMIT 60 OFFSET %s
+                    """.format(period_condition)
+                products = Product.objects.raw(
+                    sql,
                     [user.id, user.id, site_type, gender, offset])
         else:
             if gender == 0:
@@ -168,8 +183,8 @@ class HomePageDataView(APIView):
                              left join brand_followers bf on bf.brand_name = s.name
                              left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
                              left join (select product_id, user_id saved from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id
-                    where bf.user_id = %s and s.type = %s order by random() limit 60 offset %s
-                    """
+                    where bf.user_id = %s and s.type = %s {0} order by random() limit 60 offset %s
+                    """.format(period_condition)
                 products = Product.objects.raw(
                     sql,
                     [user.id, user.id, user.id, site_type, offset])
@@ -181,8 +196,8 @@ class HomePageDataView(APIView):
                              left join brand_followers bf on bf.brand_name = s.name
                              left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id
                              left join (select product_id, user_id saved from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = p.id 
-                    where bf.user_id = %s and s.type = %s and s.gender = %s order by random() limit 60 offset %s
-                    """
+                    where bf.user_id = %s and s.type = %s and s.gender = %s {0} order by random() limit 60 offset %s
+                    """.format(period_condition)
                 products = Product.objects.raw(
                     sql,
                     [user.id, user.id, user.id, site_type, gender, offset])
@@ -496,7 +511,7 @@ class BoardsView(APIView):
                 where b.user_id = %s
                 """
 
-            boards = Board.objects.raw(sql, [product_id, user.id, user.id,])
+            boards = Board.objects.raw(sql, [product_id, user.id, user.id, ])
             for board in boards:
                 if board.saved is None:
                     saved = False
