@@ -101,6 +101,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = (
         ('site__name', DropdownFilter),
         ('site__gender', DropdownFilter),
+        ('site__type', DropdownFilter),
         ('status', DropdownFilter)
     )
     readonly_fields = ('image_preview',)
