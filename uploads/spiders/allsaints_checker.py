@@ -18,8 +18,8 @@ class BrokenLinksSpider(scrapy.Spider):
         # 'DOWNLOAD_DELAY': 10,
         'SELENIUM_DRIVER_NAME': 'firefox',
         'SELENIUM_DRIVER_EXECUTABLE_PATH': which('geckodriver'),
-        # 'SELENIUM_DRIVER_ARGUMENTS': ['-headless'],
-        'SELENIUM_DRIVER_ARGUMENTS': [],
+        'SELENIUM_DRIVER_ARGUMENTS': ['-headless'],
+        # 'SELENIUM_DRIVER_ARGUMENTS': [],
         'DOWNLOADER_MIDDLEWARES': {
             'scrapy_selenium.SeleniumMiddleware': 800,
         },
