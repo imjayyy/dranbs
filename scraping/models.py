@@ -107,7 +107,7 @@ class ScraperAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def site_actions(self, obj):
-        return format_html('<a class="el-button" href={}>Start</a><a class="el-button" href={}>Stop</a>',
+        return format_html('<a class="button" href={}>Start</a><a class="button" href={}>Stop</a>',
                            reverse('admin:scraping_scraper_start', kwargs={'object_id': obj.pk}),
                            reverse('admin:scraping_scraper_stop', kwargs={'object_id': obj.pk}),
                            )
@@ -190,7 +190,7 @@ class ProductCheckerAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def site_actions(self, obj):
-        return format_html('<a class="el-button" href={}>Start</a><a class="el-button" href={}>Stop</a>',
+        return format_html('<a class="button" href={}>Start</a><a class="button" href={}>Stop</a>',
                            reverse('admin:scraping_checker_start', kwargs={'object_id': obj.pk}),
                            reverse('admin:scraping_checker_stop', kwargs={'object_id': obj.pk}),
                            )
