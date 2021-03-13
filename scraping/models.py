@@ -138,7 +138,7 @@ class ProductChecker(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.scrapyd = ScrapydAPI("http://178.128.105.215:6800")
+        self.scrapyd = ScrapydAPI("http://localhost:6800")
 
     def start(self):
         self.task_id = self.scrapyd.schedule("default", self.name)
