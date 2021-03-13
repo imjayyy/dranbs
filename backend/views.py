@@ -1,5 +1,6 @@
 import mimetypes
 import uuid
+from datetime import timedelta
 
 from django.db import connection
 from django.http import JsonResponse, HttpResponse
@@ -283,10 +284,12 @@ class ProductsByBrandView(APIView):
             start_time = now.strftime("'%Y-%m-%d 00:00:00'")
             end_time = now.strftime("'%Y-%m-%d 23:59:59'")
             period_condition = "and p.inserted_at between {0} and {1}".format(start_time, end_time)
-        # if period == 7:
-        #     start_time = now.strftime("%Y-%m-%d 00:00:00")
-        #     end_time = now.strftime("%Y-%m-%d 23:59:59")
-        #     period_condition = ""
+        elif period == 7:
+            start_of_week = now - timedelta(days=now.weekday())
+            end_of_week = start_of_week + timedelta(days=6)
+            start_time = start_of_week.strftime("'%Y-%m-%d 00:00:00'")
+            end_time = end_of_week.strftime("'%Y-%m-%d 23:59:59'")
+            period_condition = "and p.inserted_at between {0} and {1}".format(start_time, end_time)
         else:
             period_condition = ""
 
