@@ -1,10 +1,10 @@
 from django.conf import settings
 from django.urls import path
 
-from backend.views import SiteListView, HomePageDataView, CustomAuthToken, ProfileView, MyBrandsView, \
-    ToggleUserSiteView, UserCreateView, ProfileUpdateView, ProductsByBrandView, ImageView, LogoutView, \
-    ToggleFollowBrandView, BrandInfoView, ToggleLoveProduct, MyLovesView, BoardsView, ProductToggleSaveView, \
-    BoardsByCreatorView, ProductsByBoardNameView, BoardInfoView, ToggleFollowBoardView, MyFollowingsView, BoardImageView
+from backend.views import SiteListView, HomePageDataView, CustomAuthToken, ProfileView, UserCreateView, \
+    ProfileUpdateView, ProductsByBrandView, ImageView, LogoutView, ToggleFollowBrandView, BrandInfoView, \
+    ToggleLoveProduct, MyLovesView, BoardsView, ProductToggleSaveView, BoardsByCreatorView, ProductsByBoardNameView, \
+    BoardInfoView, ToggleFollowBoardView, MyFollowingsView, BoardImageView, TicketView
 
 urlpatterns = [
     path('api/sessions', CustomAuthToken.as_view()),
@@ -14,8 +14,6 @@ urlpatterns = [
     path('api/update-profile', ProfileUpdateView.as_view()),
     path('api/sites', SiteListView.as_view()),
     path('api/homepage-data', HomePageDataView.as_view()),
-    path('api/my-profiles', MyBrandsView.as_view()),
-    path('api/toggle-users-sites', ToggleUserSiteView.as_view()),
     path('api/by-brand-name/<name>', ProductsByBrandView.as_view()),
     path('api/toggle-follow-brand', ToggleFollowBrandView.as_view()),
     path('api/brand/<name>', BrandInfoView.as_view()),
@@ -29,6 +27,7 @@ urlpatterns = [
     path('api/board/<name>/image', BoardImageView.as_view()),
     path('api/toggle-follow-board', ToggleFollowBoardView.as_view()),
     path('api/my-followings', MyFollowingsView.as_view()),
+    path('api/tickets', TicketView.as_view())
 ]
 
 if settings.DEBUG:

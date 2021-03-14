@@ -2,7 +2,7 @@ from django.contrib.auth import password_validation
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from backend.models import UserProfile, Product, Board, BoardProduct
+from backend.models import Ticket, UserProfile, Product, Board, BoardProduct
 
 
 class UserSerializer(serializers.Serializer):
@@ -45,7 +45,7 @@ class UserSerializer(serializers.Serializer):
             user=user,
             gender=validated_data['gender'],
             country=validated_data['country'],
-            birthday=validated_data['birthday']
+            birthday=validated_data.get('birthday', None)
         )
         return user
 
@@ -117,3 +117,9 @@ class BoardProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = BoardProduct
         fields = ['product', 'board']
+
+
+class TicketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ticket
+        fields = '__all__'

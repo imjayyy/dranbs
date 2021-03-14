@@ -30,8 +30,6 @@ class Site(models.Model):
     inserted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    user = models.ManyToManyField(User, through="UserSite")
-
     class Meta:
         db_table = 'sites'
         ordering = ['name']
@@ -123,18 +121,6 @@ class ProductAdmin(admin.ModelAdmin):
         return format_html('<a target="_blank" href={}>{}</a>', obj.product_link, obj.product_link)
 
     show_product_link.allow_tags = True
-
-
-class UserSite(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    site = models.ForeignKey(Site, on_delete=models.CASCADE)
-
-    class Meta:
-        db_table = 'user_site'
-
-
-class UserSiteAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'site')
 
 
 class UserProfile(models.Model):
@@ -232,3 +218,19 @@ class BoardFollower(models.Model):
 
 class BoardFollowerAdmin(admin.ModelAdmin):
     list_display = ('board', 'user')
+
+
+class Ticket(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    message = models.TextField(null=False, blank=False)
+
+    inserted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'tickets'
+
+
+class TicketAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'message')

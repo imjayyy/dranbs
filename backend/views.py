@@ -15,9 +15,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from backend.forms import UploadFileForm
-from backend.models import Site, Product, UserSite, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
+from backend.models import Site, Product, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
     BoardFollower
-from backend.serializers import UserSerializer, CreateBoardSerializer, BoardSerializer, BoardProductSerializer
+from backend.serializers import TicketSerializer, UserSerializer, CreateBoardSerializer, BoardSerializer, \
+    BoardProductSerializer
 
 
 class ProfileView(APIView):
@@ -242,48 +243,6 @@ class SiteListView(View):
         }
 
         return JsonResponse(result)
-
-
-class MyBrandsView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        sites = Site.objects.all().values('id', 'name', 'display_name',
-                                          'scrape_url', 'short_url', 'gender', )
-        site_list = list(sites)
-        user_sites = UserSite.objects.filter(user=request.user).values('id', 'site_id', 'user_id')
-        user_site_list = list(user_sites)
-        return Response({
-            'sites': site_list,
-            'my_profiles': user_site_list
-        })
-
-
-class ToggleUserSiteView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        payload = JSONParser().parse(request)
-
-        data = payload.get('data')
-        used = data.get('used')
-        ids = data.get('ids')
-        if not used:
-            for pk in ids:
-                UserSite.objects.create(user=request.user, site_id=pk)
-        else:
-            for pk in ids:
-                UserSite.objects.filter(user=request.user, site_id=pk).delete()
-
-        sites = Site.objects.all().values('id', 'name', 'display_name',
-                                          'scrape_url', 'short_url', 'gender', )
-        site_list = list(sites)
-        user_sites = UserSite.objects.filter(user=request.user).values('user_id', 'site_id')
-        user_site_list = list(user_sites)
-        return Response({
-            'sites': site_list,
-            'my_profiles': user_site_list
-        })
 
 
 class ProductsByBrandView(APIView):
@@ -855,6 +814,16 @@ class MyFollowingsView(APIView):
             })
         return Response({
             'data': board_list,
+        })
+
+
+class TicketView(APIView):
+    def post(self, request):
+        serializer = TicketSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ticket = serializer.save()
+        return Response({
+            'message': "We've received your message. We'll inform you soon."
         })
 
 

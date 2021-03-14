@@ -1,5 +1,6 @@
 /venv/
 /.idea/
+/.vscode/
 /backend-static/
 /geckodriver.log
 /dbs/

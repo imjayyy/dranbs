@@ -8,9 +8,9 @@ from django.urls import path
 from django.utils.decorators import method_decorator
 from django.views import View
 
-from backend.models import Site, Product, SiteAdmin, ProductAdmin, UserProfile, UserProfileAdmin, BrandFollower, \
-    BrandFollowerAdmin, ProductLove, ProductLoveAdmin, Board, BoardAdmin, BoardProduct, BoardProductAdmin, \
-    BoardFollower, BoardFollowerAdmin
+from backend.models import Site, Product, SiteAdmin, ProductAdmin, Ticket, TicketAdmin, UserProfile, UserProfileAdmin, \
+    BrandFollower, BrandFollowerAdmin, ProductLove, ProductLoveAdmin, Board, BoardAdmin, BoardProduct, \
+    BoardProductAdmin, BoardFollower, BoardFollowerAdmin
 
 
 class Stat(models.Model):
@@ -122,3 +122,4 @@ admin.site.register(ProductLove, ProductLoveAdmin)
 admin.site.register(Board, BoardAdmin)
 admin.site.register(BoardProduct, BoardProductAdmin)
 admin.site.register(BoardFollower, BoardFollowerAdmin)
+admin.site.register(Ticket, TicketAdmin)
