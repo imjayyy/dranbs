@@ -182,6 +182,9 @@ class Board(models.Model):
     class Meta:
         db_table = 'boards'
 
+    def __str__(self):
+        return self.name
+
     @property
     def image_preview(self):
         if self.image_filename:
@@ -215,6 +218,9 @@ class BoardFollower(models.Model):
     class Meta:
         db_table = 'board_follower'
 
+    def __str__(self):
+        return self.board.name
+
 
 class BoardFollowerAdmin(admin.ModelAdmin):
     list_display = ('board', 'user')
@@ -230,6 +236,9 @@ class Ticket(models.Model):
 
     class Meta:
         db_table = 'tickets'
+
+    def __str__(self):
+        return self.name
 
 
 class TicketAdmin(admin.ModelAdmin):
