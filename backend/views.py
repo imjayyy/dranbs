@@ -683,24 +683,34 @@ class BoardInfoView(APIView):
         }
         return Response(result)
 
-    def post(self, request, name):
+    def post(self, request, slug):
         payload = JSONParser().parse(request)
         board_type = payload.get("type")
         board_name = payload.get('name')
+        description = payload.get('description')
         user = request.user
-        board = Board.objects.get(user_id=user.id, name=name)
+        board = Board.objects.get(user_id=user.id, slug=slug)
+        if board.name != board_name:
+            c = Board.objects.filter(user_id=user.id, name=board_name).count()
+            if c > 0:
+                return Response({
+                    'message': 'This name already exists in your boards.'
+                }, status=status.HTTP_400_BAD_REQUEST)
         if board_type:
             board.type = board_type
         if board_name:
             board.name = board_name
+        if description:
+            board.description = description
         board.save()
         return Response({
-            'type': board.type
+            'type': board.type,
+            'name': board.name
         })
 
-    def delete(self, request, name):
+    def delete(self, request, slug):
         user = request.user
-        Board.objects.filter(name=name, user_id=user.id).delete()
+        Board.objects.filter(slug=slug, user_id=user.id).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
