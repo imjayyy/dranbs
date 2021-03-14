@@ -609,14 +609,14 @@ class ProductsByBoardNameView(APIView):
         sql = """
             select p.*, bp.user_id saved, pl.liked
             from (select board_id, product_id from board_product where board_id = %s group by product_id, board_id) b
-                     left join (select * from board_product where board_id = %s and user_id = %s) bp on bp.product_id = b.product_id
+                     left join (select product_id, user_id from board_product where user_id = %s group by product_id, user_id) bp on bp.product_id = b.product_id
                      left join products p on p.id = b.product_id
                      left join (select product_id, user_id liked from product_love where user_id = %s) pl on pl.product_id = p.id 
             order by random() LIMIT 60 OFFSET %s
             """
         products = Product.objects.raw(
             sql,
-            [board.id, board.id, user.id, user.id, offset])
+            [board.id, user.id, user.id, offset])
 
         product_list = []
         for product in products:
