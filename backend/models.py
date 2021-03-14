@@ -173,7 +173,8 @@ class Board(models.Model):
         (1, 'Public'),
         (0, 'Private')
     ]
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
+    slug = models.CharField(unique=True, max_length=255)
     type = models.IntegerField(choices=BOARD_TYPES)
     image_filename = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)

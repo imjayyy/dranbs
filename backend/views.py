@@ -2,6 +2,7 @@ import mimetypes
 import uuid
 from datetime import timedelta
 
+from slugify import slugify
 from django.db import connection
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
@@ -498,14 +499,14 @@ class BoardsView(APIView):
             page_number = int(request.GET.get('page'))
             offset = page_number * 60
             sql = """
-                select * from (select b.id, name, type, image_filename, username, followers
+                select * from (select b.id, name, type, slug, image_filename, username, followers
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
                                    on b.id = bf.board_id
                 where b.type = 1
                 union (
-                select b.id, name, type, image_filename, username, followers
+                select b.id, name, type, slug, image_filename, username, followers
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
@@ -523,6 +524,7 @@ class BoardsView(APIView):
                 board_list.append({
                     'id': board.id,
                     'name': board.name,
+                    'slug': board.slug,
                     'image_filename': board.image_filename,
                     'username': board.username,
                     'followers': followers,
@@ -532,17 +534,19 @@ class BoardsView(APIView):
             })
 
     def post(self, request):
-        serializer = CreateBoardSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
         user = request.user
+        serializer = CreateBoardSerializer(data=request.data, user=user)
+        serializer.is_valid(raise_exception=True)
         board_name = serializer.validated_data['board_name']
         board_type = serializer.validated_data['board_type']
         product_id = serializer.validated_data['product_id']
         product = Product.objects.get(pk=product_id)
         image_filename = product.image_filename
-
-        board = Board.objects.create(name=board_name, type=board_type, user_id=user.id, image_filename=image_filename)
+        s = slugify(board_name)
+        c = Board.objects.filter(user_id=user.id, name=board_name).count()
+        slug = "{0}-{1}".format(s, c)
+        board = Board.objects.create(name=board_name, type=board_type, user_id=user.id, image_filename=image_filename,
+                                     slug=slug)
         board_serializer = BoardSerializer(board)
         BoardProduct.objects.create(product_id=product_id, board_id=board.id, user_id=user.id)
         return Response({
@@ -561,7 +565,7 @@ class BoardsByCreatorView(APIView):
 
         if user.username == username:
             sql = """
-                select b.id, name, type, image_filename, username, followers
+                select b.id, name, slug, type, image_filename, username, followers
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
@@ -589,6 +593,7 @@ class BoardsByCreatorView(APIView):
             board_list.append({
                 'id': board.id,
                 'name': board.name,
+                'slug': board.slug,
                 'image_filename': board.image_filename,
                 'username': board.username,
                 'followers': followers,
@@ -601,9 +606,9 @@ class BoardsByCreatorView(APIView):
 class ProductsByBoardNameView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, name):
+    def get(self, request, slug):
         user = request.user
-        board = Board.objects.get(name=name)
+        board = Board.objects.get(slug=slug)
         page_number = int(request.GET.get('page'))
         offset = page_number * 60
         sql = """
@@ -651,13 +656,13 @@ class ProductsByBoardNameView(APIView):
 class BoardInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, name):
+    def get(self, request, slug):
         user = request.user
-        board = Board.objects.get(name=name)
+        board = Board.objects.get(slug=slug)
 
-        followers = BoardFollower.objects.filter(board__name=name).count()
+        followers = BoardFollower.objects.filter(board__slug=slug).count()
         try:
-            BoardFollower.objects.get(board__name=name, user_id=user.id)
+            BoardFollower.objects.get(board__slug=slug, user_id=user.id)
             is_following = True
         except BoardFollower.DoesNotExist:
             is_following = False

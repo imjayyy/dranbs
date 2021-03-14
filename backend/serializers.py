@@ -101,11 +101,23 @@ class CreateBoardSerializer(serializers.Serializer):
     board_type = serializers.ChoiceField(choices=[0, 1])
     product_id = serializers.IntegerField()
 
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user')
+        super().__init__(*args, **kwargs)
+
     def update(self, instance, validated_data):
         pass
 
     def create(self, validated_data):
         pass
+
+    def validate_board_name(self, board_name):
+        user = self.user
+        try:
+            Board.objects.get(name=board_name, user_id=user.id)
+            raise serializers.ValidationError("This name already exists in your boards.")
+        except Board.DoesNotExist:
+            return board_name
 
     def validate_product_id(self, value):
         try:
