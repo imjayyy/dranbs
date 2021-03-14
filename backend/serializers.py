@@ -25,10 +25,12 @@ class UserSerializer(serializers.Serializer):
         instance.first_name = validated_data['first_name']
         instance.last_name = validated_data['last_name']
         instance.email = validated_data['email']
-        instance.set_password(validated_data['password'])
+        password = validated_data.get('password', None)
+        if password:
+            instance.set_password(validated_data['password'])
         instance.save()
         instance.profile.gender = validated_data['gender']
-        instance.profile.birthday = validated_data['birthday']
+        instance.profile.birthday = validated_data.get('birthday', None)
         instance.profile.country = validated_data['country']
         instance.profile.save()
         return instance
@@ -70,7 +72,10 @@ class UserSerializer(serializers.Serializer):
                 return email
 
     def validate_password(self, password):
-        if not self.instance:
+        if self.instance:
+            if password:
+                password_validation.validate_password(password)
+        else:
             password_validation.validate_password(password)
         return password
 
@@ -81,10 +86,13 @@ class UserSerializer(serializers.Serializer):
                     "password_confirm": "password doesn't match"
                 })
         else:
-            if data['password'] and data['password_confirm'] != data['password']:
-                raise serializers.ValidationError({
-                    "password_confirm": "password doesn't match"
-                })
+            password = data.get('password', None)
+            password_confirm = data.get('password_confirm', None)
+            if password:
+                if password_confirm != password:
+                    raise serializers.ValidationError({
+                        "password_confirm": "password doesn't match"
+                    })
         return data
 
 

@@ -113,8 +113,7 @@ class ProfileUpdateView(APIView):
 
     def patch(self, request):
         user = request.user
-        user_data = request.data['user']
-        serializer = UserSerializer(data=user_data, instance=user)
+        serializer = UserSerializer(data=request.data, instance=user)
         if serializer.is_valid():
             serializer.save()
             return Response({
