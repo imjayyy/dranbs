@@ -5,3 +5,5 @@
 /dbs/
 /logs/
 /.env
+__pycache__/
+*.pyc
