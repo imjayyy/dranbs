@@ -721,6 +721,10 @@ class BoardImageView(APIView):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             file = request.FILES['file']
+            if file.size > 1048576:
+                return Response({
+                    'message': 'Your image is too big. Max size 1MB'
+                }, status=status.HTTP_400_BAD_REQUEST)
             filename = file.name
             extension = filename.split(".")[-1]
             filename = uuid.uuid4().hex
