@@ -842,6 +842,7 @@ class MyFollowingsView(APIView):
             board_list.append({
                 'id': board.id,
                 'name': board.name,
+                'slug': board.slug,
                 'image_filename': board.image_filename,
                 'username': board.username,
                 'followers': followers,
