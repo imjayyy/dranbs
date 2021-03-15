@@ -585,7 +585,7 @@ class BoardsByCreatorView(APIView):
                 """
         else:
             sql = """
-                select b.id, name, type, image_filename, username, followers
+                select b.id, name, slug, type, image_filename, username, followers
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
