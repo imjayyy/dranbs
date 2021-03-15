@@ -554,7 +554,7 @@ class BoardsView(APIView):
             print("Unable to copy file. %s" % e)
         s = slugify(board_name)
         c = Board.objects.filter(user_id=user.id, name=board_name).count()
-        slug = "{0}-{1}".format(s, c)
+        slug = "{0}-{1}-{2}".format(s, c, user.id)
         board = Board.objects.create(name=board_name, type=board_type, user_id=user.id, image_filename=board_filename,
                                      slug=slug)
         board_serializer = BoardSerializer(board)
