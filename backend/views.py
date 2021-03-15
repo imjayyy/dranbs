@@ -710,7 +710,7 @@ class BoardInfoView(APIView):
             board.type = board_type
         if board_name:
             board.name = board_name
-        if description:
+        if description or description == '':
             board.description = description
         board.save()
         return Response({
