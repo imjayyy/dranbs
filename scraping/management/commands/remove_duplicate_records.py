@@ -20,4 +20,4 @@ class Command(BaseCommand):
         """
         products = Product.objects.raw(sql)
         for product in products:
-            logger.info(product.id)
+            print(product.id)
