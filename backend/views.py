@@ -696,7 +696,7 @@ class BoardInfoView(APIView):
                 return Response({
                     'message': 'This name already exists in your boards.'
                 }, status=status.HTTP_400_BAD_REQUEST)
-        if board_type:
+        if board_type == 0 or board_type == 1:
             board.type = board_type
         if board_name:
             board.name = board_name
