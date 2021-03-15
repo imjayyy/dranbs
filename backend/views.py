@@ -1,6 +1,8 @@
 import mimetypes
+import os
 import uuid
 from datetime import timedelta
+from shutil import copyfile
 
 from slugify import slugify
 from django.db import connection
@@ -542,10 +544,18 @@ class BoardsView(APIView):
         product_id = serializer.validated_data['product_id']
         product = Product.objects.get(pk=product_id)
         image_filename = product.image_filename
+        base_path = "/home/deploy/images"
+        source = "{}/{}".format(base_path, image_filename)
+        board_filename = "boards/{}".format(os.path.basename(source))
+        target = "{}/{}".format(base_path, board_filename)
+        try:
+            copyfile(source, target)
+        except IOError as e:
+            print("Unable to copy file. %s" % e)
         s = slugify(board_name)
         c = Board.objects.filter(user_id=user.id, name=board_name).count()
         slug = "{0}-{1}".format(s, c)
-        board = Board.objects.create(name=board_name, type=board_type, user_id=user.id, image_filename=image_filename,
+        board = Board.objects.create(name=board_name, type=board_type, user_id=user.id, image_filename=board_filename,
                                      slug=slug)
         board_serializer = BoardSerializer(board)
         BoardProduct.objects.create(product_id=product_id, board_id=board.id, user_id=user.id)
