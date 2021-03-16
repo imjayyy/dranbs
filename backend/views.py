@@ -4,9 +4,8 @@ import uuid
 from datetime import timedelta
 from shutil import copyfile
 
-from slugify import slugify
 from django.db import connection
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpResponse
 from django.utils import timezone
 from django.views import View
 from rest_framework import status
@@ -16,36 +15,13 @@ from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from slugify import slugify
 
 from backend.forms import UploadFileForm
-from backend.models import Site, Product, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
+from backend.models import Product, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
     BoardFollower
 from backend.serializers import TicketSerializer, UserSerializer, CreateBoardSerializer, BoardSerializer, \
-    BoardProductSerializer
-
-
-class ProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            request.user.profile
-        except UserProfile.DoesNotExist:
-            UserProfile.objects.create(user=request.user)
-        content = {
-            "data": {
-                "username": request.user.username,
-                "last_name": request.user.last_name,
-                "last_login": request.user.last_login,
-                "id": request.user.id,
-                "gender": request.user.profile.gender,
-                "first_name": request.user.first_name,
-                "email": request.user.email,
-                "country": request.user.profile.country,
-                "birthday": request.user.profile.birthday
-            }
-        }
-        return Response(content)
+    BoardProductSerializer, FollowBoardSerializer
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -111,8 +87,28 @@ class UserCreateView(APIView):
             return response
 
 
-class ProfileUpdateView(APIView):
+class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            request.user.profile
+        except UserProfile.DoesNotExist:
+            UserProfile.objects.create(user=request.user)
+        content = {
+            "data": {
+                "username": request.user.username,
+                "last_name": request.user.last_name,
+                "last_login": request.user.last_login,
+                "id": request.user.id,
+                "gender": request.user.profile.gender,
+                "first_name": request.user.first_name,
+                "email": request.user.email,
+                "country": request.user.profile.country,
+                "birthday": request.user.profile.birthday
+            }
+        }
+        return Response(content)
 
     def patch(self, request):
         user = request.user
@@ -126,7 +122,7 @@ class ProfileUpdateView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class HomePageDataView(APIView):
+class ProductsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -236,18 +232,6 @@ class HomePageDataView(APIView):
             'data': product_list
         }
         return Response(result)
-
-
-class SiteListView(View):
-    def get(self, request):
-        sites = Site.objects.all().values('id', 'name', 'display_name',
-                                          'scrape_url', 'short_url', )
-        site_list = list(sites)
-        result = {
-            'data': site_list
-        }
-
-        return JsonResponse(result)
 
 
 class ProductsByBrandView(APIView):
@@ -552,9 +536,7 @@ class BoardsView(APIView):
             copyfile(source, target)
         except IOError as e:
             print("Unable to copy file. %s" % e)
-        s = slugify(board_name)
-        c = Board.objects.filter(user_id=user.id, name=board_name).count()
-        slug = "{0}-{1}-{2}".format(s, c, user.id)
+        slug = slugify(board_name)
         board = Board.objects.create(name=board_name, type=board_type, user_id=user.id, image_filename=board_filename,
                                      slug=slug)
         board_serializer = BoardSerializer(board)
@@ -565,7 +547,7 @@ class BoardsView(APIView):
         })
 
 
-class BoardsByCreatorView(APIView):
+class BoardsByUsernameView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, username):
@@ -613,12 +595,12 @@ class BoardsByCreatorView(APIView):
         })
 
 
-class ProductsByBoardNameView(APIView):
+class ProductsByBoardView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, slug):
+    def get(self, request, username, slug):
         user = request.user
-        board = Board.objects.get(slug=slug)
+        board = Board.objects.get(slug=slug, user__username=username)
         page_number = int(request.GET.get('page'))
         offset = page_number * 60
         sql = """
@@ -666,9 +648,9 @@ class ProductsByBoardNameView(APIView):
 class BoardInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, slug):
+    def get(self, request, username, slug):
         user = request.user
-        board = Board.objects.get(slug=slug)
+        board = Board.objects.get(slug=slug, user__username=username)
 
         followers = BoardFollower.objects.filter(board__slug=slug).count()
         try:
@@ -693,7 +675,7 @@ class BoardInfoView(APIView):
         }
         return Response(result)
 
-    def post(self, request, slug):
+    def post(self, request, username, slug):
         payload = JSONParser().parse(request)
         board_type = payload.get("type")
         board_name = payload.get('name')
@@ -718,7 +700,7 @@ class BoardInfoView(APIView):
             'name': board.name
         })
 
-    def delete(self, request, slug):
+    def delete(self, request, username, slug):
         user = request.user
         Board.objects.filter(slug=slug, user_id=user.id).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -727,7 +709,7 @@ class BoardInfoView(APIView):
 class BoardImageView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, name):
+    def post(self, request, username, slug):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             file = request.FILES['file']
@@ -743,7 +725,7 @@ class BoardImageView(APIView):
                 for chunk in file.chunks():
                     dest.write(chunk)
 
-                board = Board.objects.get(name=name)
+                board = Board.objects.get(slug=slug, user__username=username)
                 board.image_filename = "boards/{0}".format(filename)
                 board.save()
 
@@ -757,39 +739,10 @@ class ToggleFollowBoardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        payload = JSONParser().parse(request)
-        board_name = payload.get('name')
-        if board_name:
-            user = request.user
-            try:
-                board = Board.objects.get(name=board_name)
-            except Board.DoesNotExist:
-                result = {
-                    'message': 'Bad request'
-                }
-                return Response(result, status=404)
-            try:
-                board_follower = BoardFollower.objects.get(board_id=board.id, user_id=user.id)
-                board_follower.delete()
-                followers = BoardFollower.objects.filter(board_id=board.id).count()
-                result = {
-                    'followers': followers,
-                    'is_following': False
-                }
-                return Response(result)
-            except BoardFollower.DoesNotExist:
-                BoardFollower.objects.create(board_id=board.id, user_id=user.id)
-                followers = BoardFollower.objects.filter(board_id=board.id).count()
-                result = {
-                    'followers': followers,
-                    'is_following': True
-                }
-                return Response(result)
-        else:
-            result = {
-                'message': 'Bad request'
-            }
-            return Response(result, status=400)
+        serializer = FollowBoardSerializer(data=request.data, user=request.user)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.save()
+        return Response(data=data)
 
 
 class ProductToggleSaveView(APIView):

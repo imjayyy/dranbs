@@ -2,7 +2,7 @@ from django.contrib.auth import password_validation
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from backend.models import Ticket, UserProfile, Product, Board, BoardProduct
+from backend.models import Ticket, UserProfile, Product, Board, BoardProduct, BoardFollower
 
 
 class UserSerializer(serializers.Serializer):
@@ -125,6 +125,52 @@ class CreateBoardSerializer(serializers.Serializer):
             return value
         except Product.DoesNotExist:
             raise serializers.ValidationError("product doesn't exists.")
+
+
+class FollowBoardSerializer(serializers.Serializer):
+    slug = serializers.CharField()
+    username = serializers.CharField()
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user')
+        super().__init__(*args, **kwargs)
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        board = Board.objects.get(slug=validated_data['slug'], user__username=validated_data['username'])
+        try:
+            board_follower = BoardFollower.objects.get(board_id=board.id, user_id=self.user.id)
+            board_follower.delete()
+            followers = BoardFollower.objects.filter(board_id=board.id).count()
+            result = {
+                'followers': followers,
+                'is_following': False
+            }
+            return result
+        except BoardFollower.DoesNotExist:
+            BoardFollower.objects.create(board_id=board.id, user_id=self.user.id)
+            followers = BoardFollower.objects.filter(board_id=board.id).count()
+            result = {
+                'followers': followers,
+                'is_following': True
+            }
+            return result
+
+    def validate_username(self, username):
+        try:
+            User.objects.get(username=username)
+            return username
+        except User.DoesNotExist:
+            raise serializers.ValidationError("user doesn't exists.")
+
+    def validate(self, data):
+        try:
+            Board.objects.get(slug=data['slug'], user__username=data['username'])
+            return data
+        except Board.DoesNotExist:
+            raise serializers.ValidationError("board doesn't exists.")
 
 
 class BoardSerializer(serializers.ModelSerializer):
