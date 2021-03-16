@@ -19,3 +19,4 @@ python-memcached==1.59
 django-admin-list-filter-dropdown==1.0.3
 gunicorn==20.0.4
 python-slugify==4.0.1
+django-admin-rangefilter==0.7.0

@@ -9,6 +9,7 @@ from django.dispatch import receiver
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django_admin_listfilter_dropdown.filters import DropdownFilter
+from rangefilter.filter import DateRangeFilter
 
 
 class Site(models.Model):
@@ -97,10 +98,11 @@ class ProductAdmin(admin.ModelAdmin):
         'get_gender', 'status', 'inserted_at', 'updated_at')
     search_fields = ('title', 'price', 'sale_price', 'product_link',)
     list_filter = (
+        ('inserted_at', DateRangeFilter),
         ('site__name', DropdownFilter),
         ('site__gender', DropdownFilter),
         ('site__type', DropdownFilter),
-        ('status', DropdownFilter)
+        ('status', DropdownFilter),
     )
     readonly_fields = ('image_preview',)
     list_per_page = 50
@@ -174,7 +176,7 @@ class Board(models.Model):
         (0, 'Private')
     ]
     name = models.CharField(max_length=255)
-    slug = models.CharField(unique=True, max_length=255)
+    slug = models.CharField(max_length=255)
     type = models.IntegerField(choices=BOARD_TYPES)
     image_filename = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
@@ -195,7 +197,7 @@ class Board(models.Model):
 
 
 class BoardAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'type', 'user', 'image_preview',)
+    list_display = ('id', 'name', 'slug', 'type', 'user', 'image_preview',)
     readonly_fields = ('image_preview',)
 
 
