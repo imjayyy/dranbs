@@ -9,7 +9,7 @@ from django.dispatch import receiver
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django_admin_listfilter_dropdown.filters import DropdownFilter
-from rangefilter.filter import DateRangeFilter
+from rangefilter.filter import DateTimeRangeFilter
 
 
 class Site(models.Model):
@@ -98,7 +98,7 @@ class ProductAdmin(admin.ModelAdmin):
         'get_gender', 'status', 'inserted_at', 'updated_at')
     search_fields = ('title', 'price', 'sale_price', 'product_link',)
     list_filter = (
-        ('inserted_at', DateRangeFilter),
+        ('inserted_at', DateTimeRangeFilter),
         ('site__name', DropdownFilter),
         ('site__gender', DropdownFilter),
         ('site__type', DropdownFilter),
