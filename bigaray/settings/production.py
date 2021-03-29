@@ -3,7 +3,7 @@ from .base import *
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    'bigaray.com',
+    'dranbs.com',
     '104.248.182.107'
 ]
 
