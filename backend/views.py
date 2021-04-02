@@ -21,10 +21,11 @@ from backend.forms import UploadFileForm
 from backend.models import Product, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
     BoardFollower
 from backend.serializers import TicketSerializer, UserSerializer, CreateBoardSerializer, BoardSerializer, \
-    BoardProductSerializer, FollowBoardSerializer
+    BoardProductSerializer, FollowBoardSerializer, CustomAuthTokenSerializer
 
 
 class CustomAuthToken(ObtainAuthToken):
+    serializer_class = CustomAuthTokenSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data,

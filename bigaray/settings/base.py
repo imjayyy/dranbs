@@ -120,6 +120,8 @@ MEDIA_URL = '/uploads/'
 STATIC_ROOT = os.path.join(BASE_DIR, "backend-static")
 MEDIA_ROOT = os.path.join(BASE_DIR, "uploads")
 
+AUTHENTICATION_BACKENDS = ['bigaray.backend.EmailBackend']
+
 SIMPLEUI_STATIC_OFFLINE = True
 SIMPLEUI_HOME_INFO = False
 
