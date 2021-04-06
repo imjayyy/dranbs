@@ -1,9 +1,17 @@
-from django.contrib.auth import password_validation, authenticate
+from django.conf import settings
+from django.contrib.auth import password_validation, authenticate, get_user_model
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.template.loader import render_to_string
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
 from backend.models import Ticket, UserProfile, Product, Board, BoardProduct, BoardFollower
+from backend.utils import send_email_with_background
+
+UserModel = get_user_model()
 
 
 class CustomAuthTokenSerializer(serializers.Serializer):
@@ -54,9 +62,7 @@ class UserSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     gender = serializers.IntegerField()
-    birthday = serializers.DateField(required=False, allow_null=True)
-    country = serializers.CharField(required=False, allow_null=True)
-    username = serializers.CharField()
+    birthday = serializers.DateField(required=False, allow_null=True, format='%Y-%m-%d')
     password = serializers.CharField(
         write_only=True,
         required=False,
@@ -76,13 +82,20 @@ class UserSerializer(serializers.Serializer):
         instance.save()
         instance.profile.gender = validated_data['gender']
         instance.profile.birthday = validated_data.get('birthday', None)
-        instance.profile.country = validated_data['country']
         instance.profile.save()
         return instance
 
     def create(self, validated_data):
+        first_name = validated_data.get('first_name')
+        last_name = validated_data.get('last_name')
+        initial_username = "{}.{}".format(first_name, last_name)
+        same_username_count = User.objects.filter(username=initial_username).count()
+        if same_username_count > 0:
+            username = "{}.{}".format(initial_username, same_username_count)
+        else:
+            username = initial_username
         user = User.objects.create_user(
-            username=validated_data['username'],
+            username=username,
             email=validated_data['email'],
             password=validated_data['password'],
             first_name=validated_data['first_name'],
@@ -91,20 +104,9 @@ class UserSerializer(serializers.Serializer):
         UserProfile.objects.create(
             user=user,
             gender=validated_data['gender'],
-            country=validated_data['country'],
             birthday=validated_data.get('birthday', None)
         )
         return user
-
-    def validate_username(self, username):
-        if self.instance and self.instance.username == username:
-            return username
-        else:
-            try:
-                User.objects.get(username=username)
-                raise serializers.ValidationError("username already taken")
-            except User.DoesNotExist:
-                return username
 
     def validate_email(self, email):
         if self.instance and self.instance.email == email:
@@ -141,23 +143,86 @@ class UserSerializer(serializers.Serializer):
         return data
 
 
-class ForgotPasswordSerializaer(serializers.Serializer):
+class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     def validate_email(self, email):
         try:
             self.user = User.objects.get(email=email)
+            return email
         except User.DoesNotExist:
             raise serializers.ValidationError("We couldn't find this email in our database.")
     
     def create(self, validated_data):
-        self.user.email_user(subject="Reset password", message="Hello world.")
+        email = validated_data.get('email')
+        is_debug = settings.DEBUG
+        message = render_to_string('emails/forgot_password.html', {
+            'url': 'http://localhost:3000' if is_debug else 'https://dranbs.com',
+            'uid': urlsafe_base64_encode(force_bytes(self.user.pk)),
+            'token': default_token_generator.make_token(self.user),
+        })
+        send_email_with_background(subject="Reset Password", message=message, to_email=email)
         return {
             "message": "We sent you an email please check and click the link."
         }
 
     def update(self, instance, validated_data):
         pass
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField()
+    password_confirm = serializers.CharField()
+
+    def validate_uid(self, uid):
+        try:
+            pk = urlsafe_base64_decode(uid).decode()
+            self.user = UserModel._default_manager.get(pk=pk)
+            return uid
+        except UserModel.DoesNotExist:
+            raise serializers.ValidationError("invalid uid")
+
+    def validate_token(self, token):
+        if default_token_generator.check_token(self.user, token):
+            return token
+        else:
+            raise serializers.ValidationError("invalid token")
+
+    def validate_password(self, password):
+        if self.instance:
+            if password:
+                password_validation.validate_password(password)
+        else:
+            password_validation.validate_password(password)
+        return password
+
+    def validate(self, data):
+        if not self.instance:
+            if data['password_confirm'] != data['password']:
+                raise serializers.ValidationError({
+                    "password_confirm": "password doesn't match"
+                })
+        else:
+            password = data.get('password', None)
+            password_confirm = data.get('password_confirm', None)
+            if password:
+                if password_confirm != password:
+                    raise serializers.ValidationError({
+                        "password_confirm": "password doesn't match"
+                    })
+        return data
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        self.user.set_password(validated_data.get('password'))
+        self.user.save()
+        return {
+            "message": "Success"
+        }
 
 
 class CreateBoardSerializer(serializers.Serializer):

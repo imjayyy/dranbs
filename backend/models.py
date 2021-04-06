@@ -132,7 +132,6 @@ class UserProfile(models.Model):
     ]
     gender = models.IntegerField(choices=GENDERS, null=True)
     birthday = models.DateField(null=True)
-    country = models.CharField(max_length=255, null=True, blank=True)
 
     user = models.OneToOneField(User, related_name='profile', on_delete=models.CASCADE)
 
@@ -141,8 +140,8 @@ class UserProfile(models.Model):
 
 
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'gender', 'birthday', 'country')
-    list_filter = ('gender', 'birthday', 'country',)
+    list_display = ('user', 'gender', 'birthday',)
+    list_filter = ('gender', 'birthday',)
 
 
 class BrandFollower(models.Model):

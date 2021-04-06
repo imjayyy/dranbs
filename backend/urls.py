@@ -4,13 +4,14 @@ from django.urls import path
 from backend.views import SendResetPasswordLink, ProductsView, CustomAuthToken, UserCreateView, \
     ProfileView, ProductsByBrandView, ImageView, LogoutView, ToggleFollowBrandView, BrandInfoView, \
     ToggleLoveProduct, MyLovesView, BoardsView, ProductToggleSaveView, BoardsByUsernameView, ProductsByBoardView, \
-    BoardInfoView, ToggleFollowBoardView, MyFollowingsView, BoardImageView, TicketView
+    BoardInfoView, ToggleFollowBoardView, MyFollowingsView, BoardImageView, TicketView, EmailPreview, ResetPassword
 
 urlpatterns = [
     path('api/sessions', CustomAuthToken.as_view()),
     path('api/auth/logout', LogoutView.as_view()),
     path('api/users', UserCreateView.as_view()),
     path('api/send-reset-password-link', SendResetPasswordLink.as_view()),
+    path('api/reset-password', ResetPassword.as_view()),
 
     path('api/products', ProductsView.as_view()),
     path('api/products/<name>', ProductsByBrandView.as_view()),
@@ -36,5 +37,6 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += [
-        path('images/<subdir>/<filename>', ImageView.as_view())
+        path('images/<subdir>/<filename>', ImageView.as_view()),
+        path('emails/<name>', EmailPreview.as_view())
     ]

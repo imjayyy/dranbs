@@ -21,6 +21,3 @@ DATABASES = {
         'PORT': '5432'
     }
 }
-
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = "support@dranbs.com"

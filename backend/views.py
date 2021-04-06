@@ -6,6 +6,7 @@ from shutil import copyfile
 
 from django.db import connection
 from django.http import HttpResponse
+from django.shortcuts import render
 from django.utils import timezone
 from django.views import View
 from rest_framework import status
@@ -20,8 +21,9 @@ from slugify import slugify
 from backend.forms import UploadFileForm
 from backend.models import Product, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
     BoardFollower
-from backend.serializers import ForgotPasswordSerializaer, TicketSerializer, UserSerializer, CreateBoardSerializer, BoardSerializer, \
-    BoardProductSerializer, FollowBoardSerializer, CustomAuthTokenSerializer
+from backend.serializers import ForgotPasswordSerializer, TicketSerializer, UserSerializer, CreateBoardSerializer, \
+    BoardSerializer, \
+    BoardProductSerializer, FollowBoardSerializer, CustomAuthTokenSerializer, ResetPasswordSerializer
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -62,35 +64,39 @@ class UserCreateView(APIView):
     def post(self, request):
         data = request.data
         serializer = UserSerializer(data=data)
-        if serializer.is_valid():
-            user = serializer.save()
-            profile = user.profile
-            token, created = Token.objects.get_or_create(user=user)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        profile = user.profile
+        token, created = Token.objects.get_or_create(user=user)
 
-            return Response({
-                'user': {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "last_login": user.last_login,
-                    "gender": profile.gender,
-                    "country": profile.country,
-                    "birthday": profile.birthday
-                },
-                'meta': {
-                    'token': token.key
-                }
-            })
-        else:
-            response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            return response
+        return Response({
+            'user': {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "last_login": user.last_login,
+                "gender": profile.gender,
+                "birthday": profile.birthday
+            },
+            'meta': {
+                'token': token.key
+            }
+        })
 
 
 class SendResetPasswordLink(APIView):
     def post(self, request):
-        serializer = ForgotPasswordSerializaer(data=request.data)
+        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.save()
+        return Response(data=data)
+
+
+class ResetPassword(APIView):
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.save()
         return Response(data=data)
@@ -834,3 +840,9 @@ class ImageView(View):
         except IOError:
             response = HttpResponse(status=404)
             return response
+
+
+class EmailPreview(View):
+    def get(self, request, name):
+        template_name = "emails/{}.html".format(name)
+        return render(request, template_name)
