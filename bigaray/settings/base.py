@@ -143,3 +143,4 @@ DEFAULT_FROM_EMAIL = "support@dranbs.com"
 SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 
 PASSWORD_RESET_TIMEOUT_DAYS = 1
+GOOGLE_SIGNIN_CLIENT_ID = "793656763682-nll8aftu395dt107uakbqnv3tu0fib19.apps.googleusercontent.com"

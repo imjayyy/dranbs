@@ -4,11 +4,16 @@ import uuid
 from datetime import timedelta
 from shutil import copyfile
 
+import facebook
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views import View
+from google.auth.transport import requests
+from google.oauth2 import id_token
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -34,6 +39,51 @@ class CustomAuthToken(ObtainAuthToken):
                                            context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'meta': {
+                'token': token.key
+            },
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'last_name': user.last_name,
+                'first_name': user.first_name,
+                'is_superuser': user.is_superuser,
+                'is_staff': user.is_staff,
+                'last_login': user.last_login,
+            }
+        })
+
+
+class SocialLogin(APIView):
+    def post(self, request, provider):
+        UserModel = get_user_model()
+        if provider == 'google':
+            token = request.data.get('token')
+            client_id = settings.GOOGLE_SIGNIN_CLIENT_ID
+            try:
+                idinfo = id_token.verify_oauth2_token(token, requests.Request(), client_id)
+                email = idinfo.get('email')
+                user = UserModel._default_manager.get(email=email)
+            except (ValueError, UserModel.DoesNotExist):
+                return Response({
+                    'message': 'invalid token'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        elif provider == 'facebook':
+            token = request.data.get('token')
+            graph = facebook.GraphAPI(access_token=token)
+            try:
+                profile = graph.get_object("me", fields="email")
+                email = profile.get("email")
+                user = UserModel._default_manager.get(email=email)
+            except UserModel.DoesNotExist:
+                return Response({
+                    'message': 'invalid token'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            user = None
         token, created = Token.objects.get_or_create(user=user)
         return Response({
             'meta': {
