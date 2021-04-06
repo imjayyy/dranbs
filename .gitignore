@@ -8,3 +8,5 @@
 /.env
 __pycache__/
 *.pyc
+/bigaray/__pycache__/*.pyc
+/bigaray/settings/__pycache__/*.pyc
