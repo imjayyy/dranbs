@@ -141,6 +141,25 @@ class UserSerializer(serializers.Serializer):
         return data
 
 
+class ForgotPasswordSerializaer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, email):
+        try:
+            self.user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("We couldn't find this email in our database.")
+    
+    def create(self, validated_data):
+        self.user.email_user(subject="Reset password", message="Hello world.")
+        return {
+            "message": "We sent you an email please check and click the link."
+        }
+
+    def update(self, instance, validated_data):
+        pass
+
+
 class CreateBoardSerializer(serializers.Serializer):
     board_name = serializers.CharField()
     board_type = serializers.ChoiceField(choices=[0, 1])

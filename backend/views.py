@@ -20,7 +20,7 @@ from slugify import slugify
 from backend.forms import UploadFileForm
 from backend.models import Product, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
     BoardFollower
-from backend.serializers import TicketSerializer, UserSerializer, CreateBoardSerializer, BoardSerializer, \
+from backend.serializers import ForgotPasswordSerializaer, TicketSerializer, UserSerializer, CreateBoardSerializer, BoardSerializer, \
     BoardProductSerializer, FollowBoardSerializer, CustomAuthTokenSerializer
 
 
@@ -86,6 +86,14 @@ class UserCreateView(APIView):
         else:
             response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             return response
+
+
+class SendResetPasswordLink(APIView):
+    def post(self, request):
+        serializer = ForgotPasswordSerializaer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.save()
+        return Response(data=data)
 
 
 class ProfileView(APIView):

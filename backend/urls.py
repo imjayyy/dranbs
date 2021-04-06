@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.urls import path
 
-from backend.views import ProductsView, CustomAuthToken, UserCreateView, \
+from backend.views import SendResetPasswordLink, ProductsView, CustomAuthToken, UserCreateView, \
     ProfileView, ProductsByBrandView, ImageView, LogoutView, ToggleFollowBrandView, BrandInfoView, \
     ToggleLoveProduct, MyLovesView, BoardsView, ProductToggleSaveView, BoardsByUsernameView, ProductsByBoardView, \
     BoardInfoView, ToggleFollowBoardView, MyFollowingsView, BoardImageView, TicketView
@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/sessions', CustomAuthToken.as_view()),
     path('api/auth/logout', LogoutView.as_view()),
     path('api/users', UserCreateView.as_view()),
+    path('api/send-reset-password-link', SendResetPasswordLink.as_view()),
 
     path('api/products', ProductsView.as_view()),
     path('api/products/<name>', ProductsByBrandView.as_view()),
