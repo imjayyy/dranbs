@@ -6,9 +6,11 @@ from shutil import copyfile
 
 import facebook
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
 from django.db import connection
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.utils import timezone
 from django.views import View
@@ -23,9 +25,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from slugify import slugify
 
-from backend.forms import UploadFileForm
+from backend.forms import UploadFileForm, TicketForm
 from backend.models import Product, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
-    BoardFollower
+    BoardFollower, Ticket
 from backend.serializers import ForgotPasswordSerializer, TicketSerializer, UserSerializer, CreateBoardSerializer, \
     BoardSerializer, \
     BoardProductSerializer, FollowBoardSerializer, CustomAuthTokenSerializer, ResetPasswordSerializer
@@ -878,6 +880,30 @@ class TicketView(APIView):
         return Response({
             'message': "We've received your message. We'll inform you soon."
         })
+
+
+class ReplyTicket(View):
+    def post(self, request, object_id):
+        ticket = Ticket.objects.get(pk=object_id)
+        form = TicketForm(data=request.POST, instance=ticket)
+        if form.is_valid():
+            email = form.data.get('email')
+            reply_message = form.data.get('reply_message')
+            if reply_message:
+                result = send_mail(
+                    subject='Reply',
+                    message='',
+                    html_message=reply_message,
+                    recipient_list=[email],
+                    from_email=settings.DEFAULT_FROM_EMAIL
+                )
+                form.save()
+                messages.success(request, 'The message')
+            else:
+                messages.error(request, 'The error')
+        else:
+            messages.error(request, 'The error')
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
 class ImageView(View):

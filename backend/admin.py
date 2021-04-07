@@ -6,11 +6,15 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import path
 from django.utils.decorators import method_decorator
+from django.utils.html import format_html
 from django.views import View
+from django_admin_listfilter_dropdown.filters import DropdownFilter
+from rangefilter.filter import DateTimeRangeFilter
 
-from backend.models import Site, Product, SiteAdmin, ProductAdmin, Ticket, TicketAdmin, UserProfile, UserProfileAdmin, \
-    BrandFollower, BrandFollowerAdmin, ProductLove, ProductLoveAdmin, Board, BoardAdmin, BoardProduct, \
-    BoardProductAdmin, BoardFollower, BoardFollowerAdmin
+from backend.forms import TicketForm
+from backend.models import Site, Product, Ticket, UserProfile, \
+    BrandFollower, ProductLove, Board, BoardProduct, BoardFollower
+from backend.views import ReplyTicket
 
 
 class Stat(models.Model):
@@ -107,6 +111,87 @@ class StatAdmin(admin.ModelAdmin):
             path('stats_summary', StatsSummaryView.as_view()),
             path('stats_data', StatsDataView.as_view()),
         ]
+
+
+class SiteAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'display_name', 'short_url', 'gender', 'type', 'description')
+
+
+class ProductAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'site', 'title', 'image_preview', 'price', 'sale_price', 'show_product_link',
+        'get_gender', 'status', 'inserted_at', 'updated_at')
+    search_fields = ('title', 'price', 'sale_price', 'product_link',)
+    list_filter = (
+        ('inserted_at', DateTimeRangeFilter),
+        ('site__name', DropdownFilter),
+        ('site__gender', DropdownFilter),
+        ('site__type', DropdownFilter),
+        ('status', DropdownFilter),
+    )
+    readonly_fields = ('image_preview',)
+    list_per_page = 50
+
+    def image_preview(self, obj):
+        return obj.image_preview
+
+    image_preview.short_description = 'Image Preview'
+    image_preview.allow_tags = True
+
+    def get_gender(self, obj):
+        return obj.site.get_gender_display()
+
+    get_gender.short_description = 'Gender'
+    get_gender.admin_order_field = 'site__gender'
+
+    def show_product_link(self, obj):
+        return format_html('<a target="_blank" href={}>{}</a>', obj.product_link, obj.product_link)
+
+    show_product_link.allow_tags = True
+
+
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'gender', 'birthday',)
+    list_filter = ('gender', 'birthday',)
+
+
+class BrandFollowerAdmin(admin.ModelAdmin):
+    list_display = ('brand_name', 'user',)
+    list_filter = ('brand_name',)
+
+
+class ProductLoveAdmin(admin.ModelAdmin):
+    list_display = ('user', 'product',)
+
+
+class BoardAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'slug', 'type', 'user', 'image_preview',)
+    readonly_fields = ('image_preview',)
+
+
+class BoardProductAdmin(admin.ModelAdmin):
+    list_display = ('board', 'product',)
+
+
+class BoardFollowerAdmin(admin.ModelAdmin):
+    list_display = ('board', 'user')
+
+
+class TicketAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'message', 'replied_at', 'created_at',)
+    readonly_fields = ('ticket_actions',)
+    form = TicketForm
+    change_form_template = 'admin/ticket_form.html'
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('<path:object_id>/reply', self.admin_site.admin_view(ReplyTicket.as_view()), name='backend_ticket_reply')
+        ]
+        return custom_urls + urls
+
+    def ticket_actions(self, obj):
+        return format_html('<button class="button reply-ticket" type="button">Reply</button>')
 
 
 admin.site.site_title = 'Bigaray Backend'

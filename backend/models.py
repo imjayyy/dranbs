@@ -1,15 +1,11 @@
-import os
 import logging
+import os
 
-from django.contrib import admin
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
-from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django_admin_listfilter_dropdown.filters import DropdownFilter
-from rangefilter.filter import DateTimeRangeFilter
 
 
 class Site(models.Model):
@@ -37,10 +33,6 @@ class Site(models.Model):
 
     def __str__(self):
         return '{0} - {1} - {2}'.format(self.display_name, self.get_gender_display(), self.get_type_display())
-
-
-class SiteAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'display_name', 'short_url', 'gender', 'type', 'description')
 
 
 class Product(models.Model):
@@ -92,39 +84,6 @@ def submission_delete(sender, instance, **kwargs):
         logger.warning('The product hq image does not exist.')
 
 
-class ProductAdmin(admin.ModelAdmin):
-    list_display = (
-        'id', 'site', 'title', 'image_preview', 'price', 'sale_price', 'show_product_link',
-        'get_gender', 'status', 'inserted_at', 'updated_at')
-    search_fields = ('title', 'price', 'sale_price', 'product_link',)
-    list_filter = (
-        ('inserted_at', DateTimeRangeFilter),
-        ('site__name', DropdownFilter),
-        ('site__gender', DropdownFilter),
-        ('site__type', DropdownFilter),
-        ('status', DropdownFilter),
-    )
-    readonly_fields = ('image_preview',)
-    list_per_page = 50
-
-    def image_preview(self, obj):
-        return obj.image_preview
-
-    image_preview.short_description = 'Image Preview'
-    image_preview.allow_tags = True
-
-    def get_gender(self, obj):
-        return obj.site.get_gender_display()
-
-    get_gender.short_description = 'Gender'
-    get_gender.admin_order_field = 'site__gender'
-
-    def show_product_link(self, obj):
-        return format_html('<a target="_blank" href={}>{}</a>', obj.product_link, obj.product_link)
-
-    show_product_link.allow_tags = True
-
-
 class UserProfile(models.Model):
     GENDERS = [
         (1, 'Women'),
@@ -139,11 +98,6 @@ class UserProfile(models.Model):
         db_table = 'profile'
 
 
-class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'gender', 'birthday',)
-    list_filter = ('gender', 'birthday',)
-
-
 class BrandFollower(models.Model):
     brand_name = models.CharField(max_length=255)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -152,21 +106,12 @@ class BrandFollower(models.Model):
         db_table = 'brand_followers'
 
 
-class BrandFollowerAdmin(admin.ModelAdmin):
-    list_display = ('brand_name', 'user',)
-    list_filter = ('brand_name',)
-
-
 class ProductLove(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'product_love'
-
-
-class ProductLoveAdmin(admin.ModelAdmin):
-    list_display = ('user', 'product',)
 
 
 class Board(models.Model):
@@ -195,11 +140,6 @@ class Board(models.Model):
             return ""
 
 
-class BoardAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'slug', 'type', 'user', 'image_preview',)
-    readonly_fields = ('image_preview',)
-
-
 class BoardProduct(models.Model):
     board = models.ForeignKey(Board, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -207,10 +147,6 @@ class BoardProduct(models.Model):
 
     class Meta:
         db_table = 'board_product'
-
-
-class BoardProductAdmin(admin.ModelAdmin):
-    list_display = ('board', 'product',)
 
 
 class BoardFollower(models.Model):
@@ -224,24 +160,26 @@ class BoardFollower(models.Model):
         return self.board.name
 
 
-class BoardFollowerAdmin(admin.ModelAdmin):
-    list_display = ('board', 'user')
-
-
 class Ticket(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField()
-    message = models.TextField(null=False, blank=False)
+    message = models.TextField()
+    reply_message = models.TextField(null=True, blank=True)
+    replied_at = models.DateTimeField(null=True, blank=True)
 
-    inserted_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'tickets'
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.name
 
-
-class TicketAdmin(admin.ModelAdmin):
-    list_display = ('name', 'email', 'message')
+    @property
+    def rendered_reply_message(self):
+        if self.reply_message:
+            return mark_safe(self.reply_message)
+        else:
+            return "-"

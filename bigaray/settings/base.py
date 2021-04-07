@@ -36,8 +36,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
+    'crispy_forms',
     'backend',
-    'scraping'
+    'scraping',
 ]
 
 # CACHES = {
@@ -144,3 +145,5 @@ SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 
 PASSWORD_RESET_TIMEOUT_DAYS = 1
 GOOGLE_SIGNIN_CLIENT_ID = "47360952636-aapi1cm6n0o3013iugf9d97d761c4n2o.apps.googleusercontent.com"
+
+CRISPY_TEMPLATE_PACK = 'bootstrap4'

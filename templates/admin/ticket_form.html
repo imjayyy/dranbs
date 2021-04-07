@@ -1,0 +1,66 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+{% load admin_modify %}
+
+{% block custom_stylesheet %}
+    <style>
+    .ck-editor__editable {
+        height: 300px;
+    }
+    </style>
+{% endblock %}
+
+{% block field_sets %}
+    {% for fieldset in adminform %}
+        {% include "admin/includes/ticket_fieldset.html" %}
+    {% endfor %}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+    {% submit_row %}
+{% endblock %}
+
+{% block custom_scripts %}
+    <script src="{% static 'admin/ckeditor/ckeditor.js' %}"></script>
+    <script>
+        ClassicEditor
+            .create(document.querySelector('#id_reply_message'), {
+				toolbar: {
+					items: [
+						'heading',
+						'|',
+						'bold',
+						'italic',
+						'underline',
+						'highlight',
+						'link',
+						'bulletedList',
+						'numberedList',
+						'|',
+						'undo',
+						'redo',
+						'|',
+						'alignment',
+						'fontColor',
+						'fontSize',
+						'fontFamily',
+						'|',
+						'horizontalLine'
+					]
+				},
+				language: 'en',
+				licenseKey: '',
+			})
+            .catch(error => {
+                console.error(error);
+            });
+    </script>
+    <script>
+        $(document).ready(function () {
+            $(".reply-ticket").on('click', function () {
+                $("#ticket_form").attr('action', "{% url 'admin:backend_ticket_reply' object_id %}")
+                $('#ticket_form').submit()
+            })
+        })
+    </script>
+{% endblock %}
