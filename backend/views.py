@@ -163,17 +163,12 @@ class ProfileView(APIView):
         except UserProfile.DoesNotExist:
             UserProfile.objects.create(user=request.user)
         content = {
-            "data": {
-                "username": request.user.username,
-                "last_name": request.user.last_name,
-                "last_login": request.user.last_login,
-                "id": request.user.id,
-                "gender": request.user.profile.gender,
-                "first_name": request.user.first_name,
-                "email": request.user.email,
-                "country": request.user.profile.country,
-                "birthday": request.user.profile.birthday
-            }
+            "last_name": request.user.last_name,
+            "last_login": request.user.last_login,
+            "gender": request.user.profile.gender,
+            "first_name": request.user.first_name,
+            "email": request.user.email,
+            "birthday": request.user.profile.birthday
         }
         return Response(content)
 
