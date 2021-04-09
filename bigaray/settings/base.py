@@ -144,6 +144,8 @@ DEFAULT_FROM_EMAIL = "support@dranbs.com"
 SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 
 PASSWORD_RESET_TIMEOUT_DAYS = 1
-GOOGLE_SIGNIN_CLIENT_ID = "47360952636-aapi1cm6n0o3013iugf9d97d761c4n2o.apps.googleusercontent.com"
+GOOGLE_SIGNIN_CLIENT_ID = "1088245675677-0n50acbl70dsehpdr89f636ucmf1qa37.apps.googleusercontent.com"
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
