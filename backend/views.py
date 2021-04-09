@@ -905,7 +905,7 @@ class ReplyTicket(View):
                     from_email=settings.DEFAULT_FROM_EMAIL
                 )
                 form.save()
-                messages.success(request, 'The message')
+                messages.success(request, 'Successfully replied.')
             else:
                 messages.error(request, 'The error')
         else:
