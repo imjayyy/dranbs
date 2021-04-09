@@ -9,7 +9,7 @@ from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
 from backend.models import Ticket, UserProfile, Product, Board, BoardProduct, BoardFollower
-from backend.utils import send_email_with_background
+from backend.utils import send_email_with_background, make_username
 
 UserModel = get_user_model()
 
@@ -88,12 +88,7 @@ class UserSerializer(serializers.Serializer):
     def create(self, validated_data):
         first_name = validated_data.get('first_name')
         last_name = validated_data.get('last_name')
-        initial_username = "{}.{}".format(first_name, last_name)
-        same_username_count = User.objects.filter(username=initial_username).count()
-        if same_username_count > 0:
-            username = "{}.{}".format(initial_username, same_username_count)
-        else:
-            username = initial_username
+        username = make_username(first_name, last_name)
         user = User.objects.create_user(
             username=username,
             email=validated_data['email'],

@@ -1,7 +1,9 @@
 from email.mime.image import MIMEImage
 
+from django.contrib.auth.models import User
 from django.contrib.staticfiles import finders
 from django.core.mail import EmailMultiAlternatives
+from rest_framework.response import Response
 
 
 def background_image():
@@ -19,3 +21,33 @@ def send_email_with_background(subject, message, to_email, from_email=None, **kw
     mail.attach(background_image())
 
     return mail.send()
+
+
+def api_auth(user, token):
+    return Response({
+        'meta': {
+            'token': token.key
+        },
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'last_name': user.last_name,
+            'first_name': user.first_name,
+            'is_superuser': user.is_superuser,
+            'is_staff': user.is_staff,
+            'last_login': user.last_login,
+        }
+    })
+
+
+def make_username(first_name, last_name):
+    first_name = first_name.lower()
+    last_name = last_name.lower()
+    initial_username = "{}.{}".format(first_name, last_name)
+    same_username_count = User.objects.filter(username=initial_username).count()
+    if same_username_count > 0:
+        username = "{}.{}".format(initial_username, same_username_count)
+    else:
+        username = initial_username
+    return username

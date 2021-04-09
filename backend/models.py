@@ -3,9 +3,39 @@ import os
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import JSONField
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.utils.safestring import mark_safe
+
+
+class UserProfile(models.Model):
+    GENDERS = [
+        (1, 'Women'),
+        (2, 'Men')
+    ]
+    gender = models.IntegerField(choices=GENDERS, null=True)
+    birthday = models.DateField(null=True)
+
+    user = models.OneToOneField(User, related_name='profile', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'profile'
+
+
+class UserSocialAuth(models.Model):
+    user = models.ForeignKey(User, related_name='social_auth', on_delete=models.CASCADE)
+    provider = models.CharField(max_length=32)
+    uid = models.CharField(max_length=255, db_index=True)
+    extra_data = JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "social_auth"
+
+    def __str__(self):
+        return self.user.username
 
 
 class Site(models.Model):
@@ -82,20 +112,6 @@ def submission_delete(sender, instance, **kwargs):
         os.remove(hq_image_path)
     else:
         logger.warning('The product hq image does not exist.')
-
-
-class UserProfile(models.Model):
-    GENDERS = [
-        (1, 'Women'),
-        (2, 'Men')
-    ]
-    gender = models.IntegerField(choices=GENDERS, null=True)
-    birthday = models.DateField(null=True)
-
-    user = models.OneToOneField(User, related_name='profile', on_delete=models.CASCADE)
-
-    class Meta:
-        db_table = 'profile'
 
 
 class BrandFollower(models.Model):

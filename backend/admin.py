@@ -13,8 +13,12 @@ from rangefilter.filter import DateTimeRangeFilter
 
 from backend.forms import TicketForm
 from backend.models import Site, Product, Ticket, UserProfile, \
-    BrandFollower, ProductLove, Board, BoardProduct, BoardFollower
+    BrandFollower, ProductLove, Board, BoardProduct, BoardFollower, UserSocialAuth
 from backend.views import ReplyTicket
+
+admin.site.site_title = 'Dranbs Backend'
+admin.site.site_header = 'Dranbs Backend'
+admin.site.index_title = 'Dranbs Administration'
 
 
 class Stat(models.Model):
@@ -113,10 +117,12 @@ class StatAdmin(admin.ModelAdmin):
         ]
 
 
+@admin.register(Site)
 class SiteAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'display_name', 'short_url', 'gender', 'type', 'description')
 
 
+@admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'site', 'title', 'image_preview', 'price', 'sale_price', 'show_product_link',
@@ -150,33 +156,40 @@ class ProductAdmin(admin.ModelAdmin):
     show_product_link.allow_tags = True
 
 
+@admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'gender', 'birthday',)
     list_filter = ('gender', 'birthday',)
 
 
+@admin.register(BrandFollower)
 class BrandFollowerAdmin(admin.ModelAdmin):
     list_display = ('brand_name', 'user',)
     list_filter = ('brand_name',)
 
 
+@admin.register(ProductLove)
 class ProductLoveAdmin(admin.ModelAdmin):
     list_display = ('user', 'product',)
 
 
+@admin.register(Board)
 class BoardAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'slug', 'type', 'user', 'image_preview',)
+    list_display = ('id', 'name', 'slug', 'type', 'user', 'image_preview', 'created_at', 'updated_at')
     readonly_fields = ('image_preview',)
 
 
+@admin.register(BoardProduct)
 class BoardProductAdmin(admin.ModelAdmin):
     list_display = ('board', 'product',)
 
 
+@admin.register(BoardFollower)
 class BoardFollowerAdmin(admin.ModelAdmin):
     list_display = ('board', 'user')
 
 
+@admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
     list_display = ('name', 'email', 'message', 'replied_at', 'created_at',)
     readonly_fields = ('ticket_actions',)
@@ -194,17 +207,6 @@ class TicketAdmin(admin.ModelAdmin):
         return format_html('<button class="button reply-ticket" type="button">Reply</button>')
 
 
-admin.site.site_title = 'Bigaray Backend'
-admin.site.site_header = 'Bigaray Backend'
-admin.site.index_title = 'Bigaray Administration'
-
-admin.site.register(Site, SiteAdmin)
-admin.site.register(Product, ProductAdmin)
-admin.site.register(Stat, StatAdmin)
-admin.site.register(UserProfile, UserProfileAdmin)
-admin.site.register(BrandFollower, BrandFollowerAdmin)
-admin.site.register(ProductLove, ProductLoveAdmin)
-admin.site.register(Board, BoardAdmin)
-admin.site.register(BoardProduct, BoardProductAdmin)
-admin.site.register(BoardFollower, BoardFollowerAdmin)
-admin.site.register(Ticket, TicketAdmin)
+@admin.register(UserSocialAuth)
+class UserSocialAdmin(admin.ModelAdmin):
+    list_display = ('user', 'provider', 'uid', 'created_at', 'updated_at')
