@@ -33,7 +33,7 @@ from backend.models import Product, UserProfile, BrandFollower, ProductLove, Boa
 from backend.serializers import ForgotPasswordSerializer, TicketSerializer, UserSerializer, CreateBoardSerializer, \
     BoardSerializer, \
     BoardProductSerializer, FollowBoardSerializer, CustomAuthTokenSerializer, ResetPasswordSerializer
-from backend.utils import api_auth, make_username
+from backend.utils import api_auth, make_username, make_board_list
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -597,20 +597,7 @@ class BoardsView(APIView):
                 order by {2} limit 60 offset %s
                 """.format(start_time, end_time, order)
             boards = Board.objects.raw(sql, [user.id, offset])
-            for board in boards:
-                if board.followers is not None:
-                    followers = board.followers
-                else:
-                    followers = 0
-                board_list.append({
-                    'id': board.id,
-                    'name': board.name,
-                    'slug': board.slug,
-                    'image_filename': board.image_filename,
-                    'username': board.username,
-                    'followers': followers,
-                    'newest': board.newest
-                })
+            board_list = make_board_list(boards)
             return Response({
                 'data': board_list,
             })
@@ -650,42 +637,41 @@ class BoardsByUsernameView(APIView):
         user = request.user
         page_number = int(request.GET.get('page'))
         offset = page_number * 60
+        now = timezone.now()
+        start_time = now.strftime("'%Y-%m-%d 00:00:00'")
+        end_time = now.strftime("'%Y-%m-%d 23:59:59'")
 
         if user.username == username:
             sql = """
-                select b.id, name, slug, type, image_filename, username, followers
+                select b.id, name, slug, type, image_filename, username, followers, newest
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
                                    on b.id = bf.board_id
+                         left join (select count(product_id) newest, board_id
+                                        from board_product
+                                        where created_at between {0} and {1}
+                                        group by board_id) bp on bp.board_id = b.id
                 where au.username = %s
                 order by random() limit 60 offset %s
-                """
+                """.format(start_time, end_time)
         else:
             sql = """
-                select b.id, name, slug, type, image_filename, username, followers
+                select b.id, name, slug, type, image_filename, username, followers, newest
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
                                    on b.id = bf.board_id
+                         left join (select count(product_id) newest, board_id
+                                        from board_product
+                                        where created_at between {0} and {1}
+                                        group by board_id) bp on bp.board_id = b.id
                 where b.type = 1 and au.username = %s
                 order by random() limit 60 offset %s
-                """
-        board_list = []
+                """.format(start_time, end_time)
+
         boards = Board.objects.raw(sql, [username, offset])
-        for board in boards:
-            if board.followers is not None:
-                followers = board.followers
-            else:
-                followers = 0
-            board_list.append({
-                'id': board.id,
-                'name': board.name,
-                'slug': board.slug,
-                'image_filename': board.image_filename,
-                'username': board.username,
-                'followers': followers,
-            })
+        board_list = make_board_list(boards)
         return Response({
             'data': board_list,
         })

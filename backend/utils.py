@@ -51,3 +51,22 @@ def make_username(first_name, last_name):
     else:
         username = initial_username
     return username
+
+
+def make_board_list(boards):
+    board_list = []
+    for board in boards:
+        if board.followers is not None:
+            followers = board.followers
+        else:
+            followers = 0
+        board_list.append({
+            'id': board.id,
+            'name': board.name,
+            'slug': board.slug,
+            'image_filename': board.image_filename,
+            'username': board.username,
+            'followers': followers,
+            'newest': board.newest
+        })
+    return board_list
