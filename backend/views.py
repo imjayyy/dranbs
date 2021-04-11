@@ -849,8 +849,28 @@ class ReplyTicket(View):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_total_new_count(request):
+    now = timezone.now()
+    start_time = now.strftime("'%Y-%m-%d 00:00:00'")
+    end_time = now.strftime("'%Y-%m-%d 23:59:59'")
+
+    sql = """
+        select COALESCE(sum(bp.newest), 0) total_new
+        from board_follower bf
+                 left join boards b on bf.board_id = b.id
+                 left join (select board_id, count(board_id) followers from board_follower group by board_id) bf2
+                           on bf2.board_id = b.id
+                 left join (select count(product_id) newest, board_id
+                            from board_product
+                            where created_at between {0} and {1}
+                            group by board_id) bp on bp.board_id = b.id
+                 left join auth_user au on b.user_id = au.id
+        where b.type = 1 and bf.user_id= %s
+        """.format(start_time, end_time)
+    with connection.cursor() as cursor:
+        cursor.execute(sql, [request.user.id])
+        row = cursor.fetchone()
     return Response({
-        'new_count': 10
+        'new_count': row[0]
     })
 
 
