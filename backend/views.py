@@ -21,6 +21,7 @@ from google.oauth2 import id_token
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -33,7 +34,7 @@ from backend.models import Product, UserProfile, BrandFollower, ProductLove, Boa
 from backend.serializers import ForgotPasswordSerializer, TicketSerializer, UserSerializer, CreateBoardSerializer, \
     BoardSerializer, \
     BoardProductSerializer, FollowBoardSerializer, CustomAuthTokenSerializer, ResetPasswordSerializer
-from backend.utils import api_auth, make_username, make_board_list
+from backend.utils import api_auth, make_username, make_board_list, make_product_list
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -361,30 +362,7 @@ class ProductsByBrandView(APIView):
             products = Product.objects.raw(
                 sql,
                 [user.id, user.id, site_type, name, gender, offset])
-        product_list = []
-        for product in products:
-            if product.liked is None:
-                liked = False
-            else:
-                liked = True
-            if product.saved is None:
-                saved = False
-            else:
-                saved = True
-            product_list.append({
-                'id': product.id,
-                'title': product.title,
-                'image_filename': product.image_filename,
-                'price': product.price,
-                'sale_price': product.sale_price,
-                'product_link': product.product_link,
-                'hq_image_filename': product.hq_image_filename,
-                'site': product.site_id,
-                'name': product.site.name,
-                'display_name': product.site.display_name,
-                'liked': liked,
-                'saved': saved
-            })
+        product_list = make_product_list(products)
         result = {
             'data': product_list
         }
@@ -494,30 +472,7 @@ class MyLovesView(APIView):
             """,
             [user.id, user.id, offset])
 
-        product_list = []
-        for product in products:
-            if product.liked is None:
-                liked = False
-            else:
-                liked = True
-            if product.saved is None:
-                saved = False
-            else:
-                saved = True
-            product_list.append({
-                'id': product.id,
-                'title': product.title,
-                'image_filename': product.image_filename,
-                'price': product.price,
-                'sale_price': product.sale_price,
-                'product_link': product.product_link,
-                'hq_image_filename': product.hq_image_filename,
-                'site': product.site_id,
-                'name': product.site.name,
-                'display_name': product.site.display_name,
-                'liked': liked,
-                'saved': saved
-            })
+        product_list = make_product_list(products)
         result = {
             'data': product_list
         }
@@ -643,7 +598,7 @@ class BoardsByUsernameView(APIView):
 
         if user.username == username:
             sql = """
-                select b.id, name, slug, type, image_filename, username, followers, newest
+                select b.id, name, slug, type, image_filename, username, followers, COALESCE(newest, 0) newest
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
@@ -657,7 +612,7 @@ class BoardsByUsernameView(APIView):
                 """.format(start_time, end_time)
         else:
             sql = """
-                select b.id, name, slug, type, image_filename, username, followers, newest
+                select b.id, name, slug, type, image_filename, username, followers, COALESCE(newest, 0) newest
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
@@ -697,30 +652,7 @@ class ProductsByBoardView(APIView):
             sql,
             [board.id, user.id, user.id, offset])
 
-        product_list = []
-        for product in products:
-            if product.liked is None:
-                liked = False
-            else:
-                liked = True
-            if product.saved is None:
-                saved = False
-            else:
-                saved = True
-            product_list.append({
-                'id': product.id,
-                'title': product.title,
-                'image_filename': product.image_filename,
-                'price': product.price,
-                'sale_price': product.sale_price,
-                'product_link': product.product_link,
-                'hq_image_filename': product.hq_image_filename,
-                'site': product.site_id,
-                'name': product.site.name,
-                'display_name': product.site.display_name,
-                'liked': liked,
-                'saved': saved
-            })
+        product_list = make_product_list(products)
         result = {
             'data': product_list
         }
@@ -817,14 +749,13 @@ class BoardImageView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class ToggleFollowBoardView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = FollowBoardSerializer(data=request.data, user=request.user)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.save()
-        return Response(data=data)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def toggle_follow_board_view(request):
+    serializer = FollowBoardSerializer(data=request.data, user=request.user)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.save()
+    return Response(data=data)
 
 
 class ProductToggleSaveView(APIView):
@@ -855,33 +786,27 @@ class MyFollowingsView(APIView):
         user = request.user
         page_number = int(request.GET.get('page'))
         offset = page_number * 60
+        now = timezone.now()
+        start_time = now.strftime("'%Y-%m-%d 00:00:00'")
+        end_time = now.strftime("'%Y-%m-%d 23:59:59'")
 
         sql = """
-        select b.*, bf2.followers, au.username, bf.user_id follower_id
+        select b.*, bf2.followers, au.username, bf.user_id follower_id, COALESCE(bp.newest, 0) newest
         from board_follower bf
                  left join boards b on bf.board_id = b.id
                  left join (select board_id, count(board_id) followers from board_follower group by board_id) bf2
                            on bf2.board_id = b.id
+                 left join (select count(product_id) newest, board_id
+                            from board_product
+                            where created_at between {0} and {1}
+                            group by board_id) bp on bp.board_id = b.id
                  left join auth_user au on b.user_id = au.id
         where b.type = 1 and bf.user_id= %s
         order by random() limit 60 offset %s
-        """
+        """.format(start_time, end_time)
 
-        board_list = []
         boards = Board.objects.raw(sql, [user.id, offset])
-        for board in boards:
-            if board.followers is not None:
-                followers = board.followers
-            else:
-                followers = 0
-            board_list.append({
-                'id': board.id,
-                'name': board.name,
-                'slug': board.slug,
-                'image_filename': board.image_filename,
-                'username': board.username,
-                'followers': followers,
-            })
+        board_list = make_board_list(boards)
         return Response({
             'data': board_list,
         })
@@ -919,6 +844,14 @@ class ReplyTicket(View):
         else:
             messages.error(request, 'The error')
         return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_total_new_count(request):
+    return Response({
+        'new_count': 10
+    })
 
 
 class ImageView(View):

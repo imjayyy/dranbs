@@ -4,8 +4,8 @@ from django.urls import path
 from backend.views import SendResetPasswordLink, ProductsView, CustomAuthToken, UserCreateView, \
     ProfileView, ProductsByBrandView, ImageView, LogoutView, ToggleFollowBrandView, BrandInfoView, \
     ToggleLoveProduct, MyLovesView, BoardsView, ProductToggleSaveView, BoardsByUsernameView, ProductsByBoardView, \
-    BoardInfoView, ToggleFollowBoardView, MyFollowingsView, BoardImageView, TicketView, EmailPreview, ResetPassword, \
-    SocialLogin
+    BoardInfoView, MyFollowingsView, BoardImageView, TicketView, EmailPreview, ResetPassword, \
+    SocialLogin, toggle_follow_board_view, get_total_new_count
 
 urlpatterns = [
     path('api/sessions', CustomAuthToken.as_view()),
@@ -28,7 +28,8 @@ urlpatterns = [
     path('api/boards/<username>', BoardsByUsernameView.as_view()),
     path('api/board/<username>/<slug>', BoardInfoView.as_view()),
     path('api/board/<username>/<slug>/image', BoardImageView.as_view()),
-    path('api/toggle-follow-board', ToggleFollowBoardView.as_view()),
+    path('api/toggle-follow-board', toggle_follow_board_view),
+    path('api/new-count', get_total_new_count),
 
     path('api/profile', ProfileView.as_view()),
     path('api/my-loves', MyLovesView.as_view()),

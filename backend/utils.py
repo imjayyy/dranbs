@@ -70,3 +70,31 @@ def make_board_list(boards):
             'newest': board.newest
         })
     return board_list
+
+
+def make_product_list(products):
+    product_list = []
+    for product in products:
+        if product.liked is None:
+            liked = False
+        else:
+            liked = True
+        if product.saved is None:
+            saved = False
+        else:
+            saved = True
+        product_list.append({
+            'id': product.id,
+            'title': product.title,
+            'image_filename': product.image_filename,
+            'price': product.price,
+            'sale_price': product.sale_price,
+            'product_link': product.product_link,
+            'hq_image_filename': product.hq_image_filename,
+            'site': product.site_id,
+            'name': product.site.name,
+            'display_name': product.site.display_name,
+            'liked': liked,
+            'saved': saved
+        })
+    return product_list
