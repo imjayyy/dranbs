@@ -558,6 +558,10 @@ class BoardsView(APIView):
         else:
             page_number = int(request.GET.get('page'))
             sort_type = int(request.GET.get('order'))
+            now = timezone.now()
+            start_time = now.strftime("'%Y-%m-%d 00:00:00'")
+            end_time = now.strftime("'%Y-%m-%d 23:59:59'")
+
             if sort_type == 0:
                 order = 'random()'
             elif sort_type == 1:
@@ -566,22 +570,30 @@ class BoardsView(APIView):
                 order = 'random()'
             offset = page_number * 60
             sql = """
-                select * from (select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers
+                select * from (select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers, newest
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
                                    on b.id = bf.board_id
+                         left join (select count(product_id) newest, board_id
+                                        from board_product
+                                        where created_at between {0} and {1}
+                                        group by board_id) bp on bp.board_id = b.id
                 where b.type = 1
                 union (
-                select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers
+                select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers, newest
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
                                    on b.id = bf.board_id
+                         left join (select count(product_id) newest, board_id
+                                        from board_product
+                                        where created_at between {0} and {1}
+                                        group by board_id) bp on bp.board_id = b.id
                 where b.type = 0 and b.user_id = %s
                 )) foo
-                order by {} limit 60 offset %s
-                """.format(order)
+                order by {2} limit 60 offset %s
+                """.format(start_time, end_time, order)
             boards = Board.objects.raw(sql, [user.id, offset])
             for board in boards:
                 if board.followers is not None:
@@ -595,6 +607,7 @@ class BoardsView(APIView):
                     'image_filename': board.image_filename,
                     'username': board.username,
                     'followers': followers,
+                    'newest': board.newest
                 })
             return Response({
                 'data': board_list,
