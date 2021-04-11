@@ -566,14 +566,14 @@ class BoardsView(APIView):
                 order = 'random()'
             offset = page_number * 60
             sql = """
-                select * from (select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0)
+                select * from (select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
                                    on b.id = bf.board_id
                 where b.type = 1
                 union (
-                select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0)
+                select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
