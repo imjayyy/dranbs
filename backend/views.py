@@ -561,7 +561,7 @@ class BoardsView(APIView):
             if sort_type == 0:
                 order = 'random()'
             elif sort_type == 1:
-                order = 'followers'
+                order = 'followers desc'
             else:
                 order = 'random()'
             offset = page_number * 60
