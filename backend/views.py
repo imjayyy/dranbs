@@ -557,6 +557,13 @@ class BoardsView(APIView):
             })
         else:
             page_number = int(request.GET.get('page'))
+            sort_type = int(request.GET.get('order'))
+            if sort_type == 0:
+                order = 'random()'
+            elif sort_type == 1:
+                order = 'followers'
+            else:
+                order = 'random()'
             offset = page_number * 60
             sql = """
                 select * from (select b.id, name, type, slug, image_filename, username, followers
@@ -573,8 +580,8 @@ class BoardsView(APIView):
                                    on b.id = bf.board_id
                 where b.type = 0 and b.user_id = %s
                 )) foo
-                order by random() limit 60 offset %s
-                """
+                order by {} limit 60 offset %s
+                """.format(order)
             boards = Board.objects.raw(sql, [user.id, offset])
             for board in boards:
                 if board.followers is not None:
