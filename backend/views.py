@@ -566,11 +566,13 @@ class BoardsView(APIView):
                 order = 'random()'
             elif sort_type == 1:
                 order = 'followers desc'
+            elif sort_type == 2:
+                order = 'newest desc'
             else:
                 order = 'random()'
             offset = page_number * 60
             sql = """
-                select * from (select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers, newest
+                select * from (select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers, COALESCE(newest, 0) newest
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
@@ -581,7 +583,7 @@ class BoardsView(APIView):
                                         group by board_id) bp on bp.board_id = b.id
                 where b.type = 1
                 union (
-                select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers, newest
+                select b.id, name, type, slug, image_filename, username, COALESCE(followers, 0) followers, COALESCE(newest, 0) newest
                 from boards b
                          left join auth_user au on b.user_id = au.id
                          left join (select board_id, count(board_id) followers from board_follower group by board_id) bf
