@@ -169,6 +169,7 @@ class BoardProduct(models.Model):
 
     class Meta:
         db_table = 'board_product'
+        ordering = ['-created_at']
 
 
 class BoardFollower(models.Model):
