@@ -181,7 +181,7 @@ class BoardAdmin(admin.ModelAdmin):
 
 @admin.register(BoardProduct)
 class BoardProductAdmin(admin.ModelAdmin):
-    list_display = ('board', 'product', 'user', 'created_at')
+    list_display = ('id', 'board', 'product', 'user', 'created_at')
 
 
 @admin.register(BoardFollower)
