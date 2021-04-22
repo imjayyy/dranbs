@@ -30,7 +30,7 @@ from slugify import slugify
 
 from backend.forms import UploadFileForm, TicketForm
 from backend.models import Product, UserProfile, BrandFollower, ProductLove, Board, BoardProduct, \
-    BoardFollower, Ticket, UserSocialAuth
+    BoardFollower, Ticket
 from backend.serializers import ForgotPasswordSerializer, TicketSerializer, UserSerializer, CreateBoardSerializer, \
     BoardSerializer, \
     BoardProductSerializer, FollowBoardSerializer, CustomAuthTokenSerializer, ResetPasswordSerializer
@@ -45,74 +45,6 @@ class CustomAuthToken(ObtainAuthToken):
                                            context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
-        token, created = Token.objects.get_or_create(user=user)
-        return api_auth(user, token)
-
-
-class SocialLogin(APIView):
-    def post(self, request, provider):
-        if provider == 'google':
-            token = request.data.get('token')
-            client_id = settings.GOOGLE_SIGNIN_CLIENT_ID
-            try:
-                idinfo = id_token.verify_oauth2_token(token, requests.Request(), client_id)
-            except GoogleAuthError:
-                return Response({
-                    'message': 'invalid token'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            email = idinfo.get('email')
-            userid = idinfo.get('sub')
-            try:
-                user = User.objects.get(email=email)
-            except User.DoesNotExist:
-                first_name = idinfo.get('given_name')
-                last_name = idinfo.get('family_name')
-                password = get_random_string(length=16)
-                user = User.objects.create_user(
-                    email=email, password=password, first_name=first_name, last_name=last_name,
-                    username=make_username(first_name, last_name)
-                )
-                UserProfile.objects.create(
-                    user=user,
-                    gender=0,
-                    birthday=None
-                )
-            try:
-                UserSocialAuth.objects.get(provider='google', uid=userid)
-            except UserSocialAuth.DoesNotExist:
-                UserSocialAuth.objects.create(user=user, provider='google', uid=userid, extra_data=idinfo)
-        elif provider == 'facebook':
-            token = request.data.get('token')
-            graph = facebook.GraphAPI(access_token=token)
-            try:
-                profile = graph.get_object("me", fields="id,first_name,last_name,name,picture,email")
-            except facebook.GraphAPIError:
-                return Response({
-                    'message': 'invalid token'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            email = profile.get("email")
-            userid = profile.get('id')
-            try:
-                user = User.objects.get(email=email)
-            except User.DoesNotExist:
-                first_name = profile.get('first_name')
-                last_name = profile.get('last_name')
-                password = get_random_string(length=16)
-                user = User.objects.create_user(
-                    email=email, password=password, first_name=first_name, last_name=last_name,
-                    username=make_username(first_name, last_name)
-                )
-                UserProfile.objects.create(
-                    user=user,
-                    gender=0,
-                    birthday=None
-                )
-            try:
-                UserSocialAuth.objects.get(provider='facebook', uid=userid)
-            except UserSocialAuth.DoesNotExist:
-                UserSocialAuth.objects.create(user=user, provider=provider, uid=userid, extra_data=profile)
-        else:
-            user = None
         token, created = Token.objects.get_or_create(user=user)
         return api_auth(user, token)
 

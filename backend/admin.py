@@ -13,7 +13,7 @@ from rangefilter.filter import DateTimeRangeFilter
 
 from backend.forms import TicketForm
 from backend.models import Site, Product, Ticket, UserProfile, \
-    BrandFollower, ProductLove, Board, BoardProduct, BoardFollower, UserSocialAuth
+    BrandFollower, ProductLove, Board, BoardProduct, BoardFollower
 from backend.views import ReplyTicket
 
 admin.site.site_title = 'Dranbs Backend'
@@ -205,8 +205,3 @@ class TicketAdmin(admin.ModelAdmin):
 
     def ticket_actions(self, obj):
         return format_html('<button class="button reply-ticket" type="button">Reply</button>')
-
-
-@admin.register(UserSocialAuth)
-class UserSocialAdmin(admin.ModelAdmin):
-    list_display = ('user', 'provider', 'uid', 'created_at', 'updated_at')

@@ -36,6 +36,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
+    'oauth2_provider',
+    'social_django',
+    'rest_framework_social_oauth2',
     'crispy_forms',
     'backend',
     'scraping',
@@ -120,8 +123,6 @@ STATIC_URL = '/backend-static/'
 MEDIA_URL = '/uploads/'
 STATIC_ROOT = os.path.join(BASE_DIR, "backend-static")
 MEDIA_ROOT = os.path.join(BASE_DIR, "uploads")
-
-AUTHENTICATION_BACKENDS = ['bigaray.backend.EmailBackend']
 
 SIMPLEUI_STATIC_OFFLINE = True
 SIMPLEUI_HOME_INFO = False

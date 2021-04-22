@@ -23,21 +23,6 @@ class UserProfile(models.Model):
         db_table = 'profile'
 
 
-class UserSocialAuth(models.Model):
-    user = models.ForeignKey(User, related_name='social_auth', on_delete=models.CASCADE)
-    provider = models.CharField(max_length=32)
-    uid = models.CharField(max_length=255, db_index=True)
-    extra_data = JSONField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "social_auth"
-
-    def __str__(self):
-        return self.user.username
-
-
 class Site(models.Model):
     GENDERS = [
         (1, 'Women'),

@@ -5,7 +5,7 @@ from backend.views import SendResetPasswordLink, ProductsView, CustomAuthToken, 
     ProfileView, ProductsByBrandView, ImageView, LogoutView, ToggleFollowBrandView, BrandInfoView, \
     ToggleLoveProduct, MyLovesView, BoardsView, ProductToggleSaveView, BoardsByUsernameView, ProductsByBoardView, \
     BoardInfoView, MyFollowingsView, BoardImageView, TicketView, EmailPreview, ResetPassword, \
-    SocialLogin, toggle_follow_board_view, get_total_new_count
+    toggle_follow_board_view, get_total_new_count
 
 urlpatterns = [
     path('api/sessions', CustomAuthToken.as_view()),
@@ -13,7 +13,6 @@ urlpatterns = [
     path('api/users', UserCreateView.as_view()),
     path('api/send-reset-password-link', SendResetPasswordLink.as_view()),
     path('api/reset-password', ResetPassword.as_view()),
-    path('api/social-login/<provider>', SocialLogin.as_view()),
 
     path('api/products', ProductsView.as_view()),
     path('api/products/<name>', ProductsByBrandView.as_view()),
