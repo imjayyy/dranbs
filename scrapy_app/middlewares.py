@@ -59,6 +59,11 @@ class ScrapyAppSpiderMiddleware:
         for r in start_requests:
             yield r
 
+    def process_response(self, request, response, spider):        
+
+        pass
+
+
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
 
