@@ -154,12 +154,12 @@ class ProductAdmin(admin.ModelAdmin):
         return format_html('<a target="_blank" href={}>{}</a>', obj.product_link, obj.product_link)
 
     show_product_link.allow_tags = True
-    actions = ['delete_selected']
 
     def delete_selected(self, request, queryset):
         queryset.delete()
 
     delete_selected.short_description = "Delete selected items"
+    actions = ['delete_selected']
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
