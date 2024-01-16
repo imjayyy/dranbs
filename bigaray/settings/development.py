@@ -5,7 +5,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     '104.248.182.107',
     'dranbs.com',
-    '127.0.0.1'
+    '127.0.0.1',
+    'nju.fashion'
 ]
 
 # Database
