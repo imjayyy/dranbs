@@ -35,4 +35,52 @@ def revert_scrapper_api_url(proxy_url):
     return original_url
 
 
-print(revert_scrapper_api_url('http://api.scraperapi.com/?api_key=f52047399471ce896b178ce185b081df&url=https%3A%2F%2Fwww.bandier.com%2Fproducts%2Fkansa-sherpa-belt-bag-black'))
+base_urls = ['https://www.anthropologie.com/clothing-new-this-week?page=%s' % page for page in range(1, 4)]
+start_urls = [get_scraperapi_url(url) for url in base_urls]
+
+
+url = (revert_scrapper_api_url(start_urls[0]))
+
+parsed = urlparse(url)
+# page = (parse_qs(parsed.query))['page'][0]
+# r = requests.get(start_urls[0])
+def get_scraperapi_url_ultra_premium_renderJS(url, APIKEY=APIKEY):
+    payload = {'api_key': APIKEY, 'ultra_premium':'true', 'url': url, 'render' : 'true' }
+    proxy_url = 'http://api.scraperapi.com/?' + urlencode(payload)
+    return proxy_url
+
+
+print(get_scraperapi_url_ultra_premium_renderJS('https://bananarepublic.gapcanada.ca/browse/category.do?cid=48422'))
+
+
+# from bs4 import BeautifulSoup
+
+
+# r = requests.get(get_scraperapi_url_ultra_premium_renderJS('https://bananarepublic.gapcanada.ca/browse/category.do?cid=48422'))
+
+
+# if r.status_code == 200:
+#     # Parse the HTML content using BeautifulSoup
+#     soup = BeautifulSoup(r.content, 'html.parser')
+
+#     # Find all elements with a class starting with 'product-card'
+#     # product_card_classes = [c for c in soup.find_all(class_=lambda x: x and x.startswith('product-card'))]
+#     product_card_elements  = soup.find_all(class_='product-card')
+#     # Print the found classes
+#     # for product_card_class in product_card_classes:
+#     #     print(product_card_class.get('class'))
+
+#     for product_card in product_card_elements:
+#         print(product_card)
+#         print( '-----------------------------------------------------------------------------------------------------------')
+#                 # Extract information as needed
+#         #     # Example: 
+#         # title = product_card.find(class_='product-card__name').get_text()
+#         #     # Example: 
+#         # price = product_card.find(class_='product-card-price').find('div').find('span').find('span').get_text()
+#             # Example: image_url = product_card.find('img', class_='product-card__image')['src']
+#             # Example: product_link = product_card.find(class_='product-card__link')['href']
+
+
+# else:
+#     print(f"Failed to retrieve the page. Status code: {r.status_code}")

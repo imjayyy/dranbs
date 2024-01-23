@@ -14,6 +14,13 @@ def get_scraperapi_url(url, APIKEY=APIKEY):
     proxy_url = 'http://api.scraperapi.com/?' + urlencode(payload)
     return proxy_url
 
+def get_scraperapi_url_renderJS(url, APIKEY=APIKEY):
+    payload = {'api_key': APIKEY, 'url': url, 'render' : 'true'}
+    proxy_url = 'http://api.scraperapi.com/?' + urlencode(payload)
+    return proxy_url
+
+
+
 
 def get_scraperapi_url_premium(url, APIKEY=APIKEY):
     payload = {'api_key': APIKEY, 'premium':'true', 'url': url, }
@@ -22,6 +29,12 @@ def get_scraperapi_url_premium(url, APIKEY=APIKEY):
 
 def get_scraperapi_url_ultra_premium(url, APIKEY=APIKEY):
     payload = {'api_key': APIKEY, 'ultra_premium':'true', 'url': url, }
+    proxy_url = 'http://api.scraperapi.com/?' + urlencode(payload)
+    return proxy_url
+
+
+def get_scraperapi_url_ultra_premium_renderJS(url, APIKEY=APIKEY):
+    payload = {'api_key': APIKEY, 'ultra_premium':'true', 'url': url, 'render' : 'true' }
     proxy_url = 'http://api.scraperapi.com/?' + urlencode(payload)
     return proxy_url
 

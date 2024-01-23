@@ -12,11 +12,12 @@ from scraping.models import Scraper
 from scrapy_app.items import ProductItem
 from . import get_scraperapi_url_premium, revert_scrapper_api_url
 
+
 class ProductSpider(scrapy.Spider):
-    name = 'Anthropologie_1_1'  # name_gender_type
+    name = 'Anthropologie_1_2'  # name_gender_type
     allowed_domains = ['www.anthropologie.com']
     base_url = 'https://www.anthropologie.com/shop'
-    base_image_url = 'https://s7d5.scene7.com/is/image/Anthropologie'
+    base_image_url = 'https://s7d5.scene7.com/is/image/Anthropologie'    
     base_urls = ['https://www.anthropologie.com/clothing-new-this-week?page=%s' % page for page in range(1, 4)]
     start_urls = [get_scraperapi_url_premium(url) for url in base_urls]
 
@@ -34,7 +35,7 @@ class ProductSpider(scrapy.Spider):
             scraper.save()
         except Scraper.DoesNotExist:
             pass
-
+  
     def parse(self, response, **kwargs):
         products = response.css('.o-pwa-product-tile')
         print('response', response)

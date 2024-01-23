@@ -14,7 +14,7 @@ class ProductSpider(scrapy.Spider):
     allowed_domains = ['bananarepublic.gapcanada.ca']
     start_urls = [
         'https://bananarepublic.gapcanada.ca/browse/category.do?cid=48422',
-        'https://bananarepublic.gapcanada.ca/browse/category.do?cid=48422#pageId=1&department=136'
+        # 'https://bananarepublic.gapcanada.ca/browse/category.do?cid=48422#pageId=1&department=136'
     ]
 
     custom_settings = {

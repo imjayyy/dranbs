@@ -4,14 +4,18 @@ from scrapy import signals
 
 from scraping.models import Scraper
 from scrapy_app.items import ProductItem
-from . import APIKEY, get_scraperapi_url_ultra_premium
+from . import get_scraperapi_url_ultra_premium
 
 class ProductSpider(scrapy.Spider):
-    name = 'Urban-outfitters_1_1'  # name_gender_type
+    name = 'Urban-outfitters_2_2'  # name_gender_type
     allowed_domains = ['www.urbanoutfitters.com']
     start_urls = [
-        'https://www.urbanoutfitters.com/womens-new-arrivals?page=%s' % page for page in range(1, 6)
+        'https://www.urbanoutfitters.com/mens-clothing-sale?page=%s' % page for page in range(1, 8)
     ]
+    custom_settings = {
+        "DOWNLOAD_DELAY": 20
+    }
+    base_url = "https://www.urbanoutfitters.com"
     for i in range(len(start_urls)):
         start_urls[i] = get_scraperapi_url_ultra_premium(start_urls[i])
     base_url = "https://www.urbanoutfitters.com"
@@ -30,7 +34,6 @@ class ProductSpider(scrapy.Spider):
             scraper.save()
         except Scraper.DoesNotExist:
             pass
-
     def parse(self, response, **kwargs):
         products = response.css('.c-pwa-tile-grid-inner')
         print('lenght -----------------> ', len(products))
@@ -64,31 +67,3 @@ class ProductSpider(scrapy.Spider):
                 pass
             
             yield item
-
-            # if title and hq_image_url and price and product_link:
-            #     yield item
-            # else:
-            #     continue
-
-
-    # def parse_product(self, response):
-    #     item = ProductItem()
-    #     item['product_link'] = response.request.url
-    #     # title = response.css('.c-pwa-product-meta-heading::text').get()
-    #     title = response.css('.o-pwa-product-tile__heading::text').get()
-    #     if title:
-    #         item['title'] = title.strip()
-    #     else:
-    #         pass
-    #     price = response.css('span.c-pwa-product-price__current::text').get()
-    #     if price:
-    #         item['price'] = price
-    #     else:
-    #         pass
-    #     hq_image_url = response.css('img.o-pwa-image__img::attr(src)').get()
-    #     image_url = hq_image_url.replace('wid=683', 'wid=400')
-    #     if hq_image_url:
-    #         item['image_urls'] = [image_url, hq_image_url]
-    #     else:
-    #         pass
-    #     yield item
