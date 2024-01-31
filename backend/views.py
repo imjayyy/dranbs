@@ -808,14 +808,23 @@ def get_total_new_count(request):
 
 class ImageView(View):
     def get(self, request, subdir, filename):
+        directory = '/var/www/backend/dranbs/images/'
         try:
-            with open("/home/deploy/images/{0}/{1}".format(subdir, filename), "rb") as f:
-                mime = mimetypes.MimeTypes().guess_type("/home/deploy/images/{0}/{1}".format(subdir, filename))[0]
+            with open("/var/www/backend/dranbs/images/{0}/{1}".format(subdir, filename), "rb") as f:
+                mime = mimetypes.MimeTypes().guess_type("/var/www/backend/dranbs/images/{0}/{1}".format(subdir, filename))[0]
                 response = HttpResponse(f.read(), content_type=mime)
                 return response
         except IOError:
             response = HttpResponse(status=404)
             return response
+        # try:
+        #     with open("/home/deploy/images/{0}/{1}".format(subdir, filename), "rb") as f:
+        #         mime = mimetypes.MimeTypes().guess_type("/home/deploy/images/{0}/{1}".format(subdir, filename))[0]
+        #         response = HttpResponse(f.read(), content_type=mime)
+        #         return response
+        # except IOError:
+        #     response = HttpResponse(status=404)
+        #     return response
 
 
 class EmailPreview(View):
