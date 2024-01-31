@@ -808,6 +808,7 @@ def get_total_new_count(request):
 
 class ImageView(View):
     def get(self, request, subdir, filename):
+        return HttpResponse("This is a custom response from Django!")
         directory = '/var/www/backend/dranbs/images/'
         with open("/var/www/backend/dranbs/images/{0}/{1}".format(subdir, filename), "rb") as f:
                 mime = mimetypes.MimeTypes().guess_type("/var/www/backend/dranbs/images/{0}/{1}".format(subdir, filename))[0]
