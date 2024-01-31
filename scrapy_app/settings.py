@@ -86,6 +86,6 @@ ITEM_PIPELINES = {
 # HTTPCACHE_DIR = 'httpcache'
 # HTTPCACHE_IGNORE_HTTP_CODES = []
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
-# IMAGES_STORE = '/home/deploy/images'
-IMAGES_STORE = '/var/www/backend/dranbs/images/'
+IMAGES_STORE = '/home/deploy/images'
+
 
