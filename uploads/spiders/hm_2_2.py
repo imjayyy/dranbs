@@ -9,12 +9,11 @@ from scrapy_app.items import ProductItem
 
 
 class ProductSpider(scrapy.Spider):
-    name = 'Hm_1_2'  # name_gender_type
+    name = 'Hm_2_2'  # name_gender_type
     allowed_domains = ['www2.hm.com']
     start_urls = [
-        # 'https://www2.hm.com/en_ca/sale/shopbypr38oductladies/view-all/_jcr_content/main/productlisting_b48c.display.json?sort=stock&image-size=small&image=model&offset=0&page-size=13'
-        'https://www2.hm.com/en_ca/sale/shopbyproductladies/view-all/_jcr_content/main/productlisting_b48c.display.json?sort=stock&image-size=small&image=stillLife&offset=36&page-size=259'
-
+        'https://www2.hm.com/en_ca/sale/shopbyproductmen/view-all/_jcr_content/main/productlisting_9436.display.json'
+        '?sort=stock&image-size=small&image=stillLife&offset=0&page-size=259'
     ]
     base_url = 'https://www2.hm.com'
     custom_settings = {

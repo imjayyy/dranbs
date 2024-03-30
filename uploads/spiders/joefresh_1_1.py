@@ -6,18 +6,16 @@ from scrapy import signals
 
 from scraping.models import Scraper
 from scrapy_app.items import ProductItem
-
+from . import get_scraperapi_url
 
 class ProductSpider(scrapy.Spider):
-    name = 'Hm_2_1'  # name_gender_type
-    allowed_domains = ['www2.hm.com']
+    name = 'Joe-fresh_1_1'  # name_gender_type
+    allowed_domains = ['www.joefresh.com']
+    root_url = 'https://www.joefresh.com/ca'
     start_urls = [
-        'https://www2.hm.com/en_ca/men/new-arrivals/clothes/_jcr_content/main/productlisting.display.json?sort=stock&image-size=small&image=model&offset=0&page-size=174'
+        get_scraperapi_url('https://www.joefresh.com/ca/**/c/10008/plpData?q=:relevance&sort=relevance&page=0&t=1602642282265'),
+        get_scraperapi_url('https://www.joefresh.com/ca/**/c/10008/plpData?q=:relevance&sort=relevance&page=1&t=1602642282265'),
     ]
-    base_url = 'https://www2.hm.com'
-    custom_settings = {
-        'ROBOTSTXT_OBEY': False,
-    }
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
@@ -36,16 +34,17 @@ class ProductSpider(scrapy.Spider):
 
     def parse(self, response, **kwargs):
         json_response = json.loads(response.body)
-        products = json_response.get('products')
+        result = json_response[0]
+        products = result['results']
         for product in products:
             item = ProductItem()
-            image_url = product.get('image')[0].get('src')
-            if 'https:' not in image_url:
-                image_url = 'https:' + image_url
-            hq_image_url = image_url.replace('/product/style', '/product/main')
+            item['title'] = product.get('name')
+            item['price'] = product.get('minEffectivePrice').get('currencyIso') + product.get('minEffectivePrice').get('formattedValue')
+            images = product.get('images')
+            item['image_urls'] = [
+                images.get('hover')[0],
+                images.get('hover')[0]
+            ]
 
-            item['title'] = product.get('title')
-            item['price'] = product.get('price')
-            item['image_urls'] = [image_url, hq_image_url]
-            item['product_link'] = self.base_url + product.get('link')
+            item['product_link'] = self.root_url + product.get('url')
             yield item
